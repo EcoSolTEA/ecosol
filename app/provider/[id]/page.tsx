@@ -57,7 +57,15 @@ export default async function ProviderPage({
             <div className="space-y-4">
               <h3 className="font-semibold text-lg border-b pb-2">Contatos e Redes</h3>
               <div className="scale-125 origin-left pl-2">
-                <ContactIcons contacts={service} />
+                <ContactIcons 
+                  contacts={{
+                    whatsapp: service.whatsapp ?? undefined,
+                    instagram: service.instagram ?? undefined,
+                    tiktok: service.tiktok ?? undefined,
+                    email: service.email ?? undefined,
+                    site: service.site ?? undefined,
+                  }} 
+                />
               </div>
             </div>
 
