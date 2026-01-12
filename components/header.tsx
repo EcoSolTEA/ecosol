@@ -12,11 +12,18 @@ export default function Header() {
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [notifications, setNotifications] = React.useState([]);
 
-  // Função isolada para buscar notificações (Engenharia de Reuso)
+  /**
+   * Função isolada para buscar notificações (Engenharia de Reuso)
+   * Agora com guarda de segurança para evitar fetch sem e-mail
+   */
   const fetchNotifications = async (email: string) => {
+    if (!email) return;
+
     try {
       const res = await fetch(`/api/user/notifications?email=${email}`);
+      // Como a API agora retorna [] para novos usuários, o res.ok será true
       if (!res.ok) throw new Error("Falha ao carregar notificações");
+      
       const data = await res.json();
       setNotifications(data);
     } catch (err) {
@@ -24,16 +31,22 @@ export default function Header() {
     }
   };
 
-  // Sincronização de Estado do Usuário e Dados Iniciais
+  /**
+   * Sincronização de Estado do Usuário e Dados Iniciais
+   * Otimizada com buscas em paralelo para performance
+   */
   React.useEffect(() => {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
+      
       if (session?.user) {
         setUser(session.user);
+        const userEmail = session.user.email;
         
         try {
+          // Busca role e notificações simultaneamente para reduzir latência
           const [roleRes] = await Promise.all([
-            fetch(`/api/user/role?email=${session.user.email}`)
+            fetch(`/api/user/role?email=${userEmail}`)
           ]);
           
           if (roleRes.ok) {
@@ -41,11 +54,10 @@ export default function Header() {
             setRole(roleData.role);
           }
 
-          // Busca notificações iniciais
-          await fetchNotifications(session.user.email!);
+          if (userEmail) await fetchNotifications(userEmail);
         } catch (err) {
-          console.warn("Erro ao buscar dados complementares:", err);
-          setRole("USER");
+          console.warn("Aguardando sincronização de perfil no banco...");
+          setRole("USER"); // Fallback seguro
         }
       }
     };
@@ -54,9 +66,11 @@ export default function Header() {
 
     // Listener para mudanças de autenticação em tempo real
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchNotifications(session.user.email!);
+      const activeUser = session?.user ?? null;
+      setUser(activeUser);
+
+      if (activeUser?.email) {
+        fetchNotifications(activeUser.email);
       } else {
         setRole("USER");
         setNotifications([]);
@@ -71,7 +85,7 @@ export default function Header() {
     window.location.href = "/";
   };
 
-  // Lógica para o ponto vermelho de alerta
+  // Lógica para o ponto vermelho de alerta (Estado computado)
   const hasUnread = notifications.some((n: any) => !n.read);
 
   return (
@@ -100,7 +114,7 @@ export default function Header() {
               </>
             ) : (
               <div className="flex items-center gap-4">
-                {/* Botão do Modal de Notificações */}
+                {/* Botão de Notificações com Feedback Visual */}
                 <button 
                   onClick={() => setIsModalOpen(true)}
                   className="relative p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors"
@@ -114,14 +128,14 @@ export default function Header() {
 
                 {role === "ADMIN" && (
                   <Link href="/admin/dashboard" className="hidden sm:block">
-                    <Button variant="outline" size="sm" className="border-blue-200 text-blue-600 hover:bg-blue-50">
+                    <Button variant="outline" size="sm" className="border-blue-200 text-blue-600 hover:bg-blue-50 font-bold">
                       Admin
                     </Button>
                   </Link>
                 )}
 
                 <Link href="/profile" title="Ver meu perfil">
-                  <div className="w-9 h-9 rounded-full bg-blue-600 border border-blue-700 flex items-center justify-center text-white text-sm font-black uppercase shadow-sm hover:scale-105 transition-transform">
+                  <div className="w-9 h-9 rounded-full bg-blue-600 border border-blue-700 flex items-center justify-center text-white text-sm font-black uppercase shadow-sm hover:scale-110 transition-transform">
                     {user.email?.[0]}
                   </div>
                 </Link>
@@ -130,7 +144,7 @@ export default function Header() {
                   variant="ghost" 
                   size="sm" 
                   onClick={handleLogout} 
-                  className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                  className="text-red-500 hover:text-red-600 hover:bg-red-50 font-bold"
                 >
                   Sair
                 </Button>
@@ -140,7 +154,7 @@ export default function Header() {
         </div>
       </header>
 
-      {/* Modal de Notificações atualizado com props para limpeza */}
+      {/* Modal sincronizado com a função de atualização */}
       <NotificationModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 

@@ -5,9 +5,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const email = searchParams.get("email");
 
-  if (!email) {
-    return NextResponse.json({ error: "E-mail não fornecido" }, { status: 400 });
-  }
+  if (!email) return NextResponse.json({ error: "E-mail requerido" }, { status: 400 });
 
   try {
     const user = await prisma.user.findUnique({
@@ -15,9 +13,8 @@ export async function GET(request: Request) {
       select: { id: true },
     });
 
-    if (!user) {
-      return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 });
-    }
+    // Visão de Engenharia: Retorna vazio em vez de erro para novos usuários
+    if (!user) return NextResponse.json([]);
 
     const notifications = await prisma.notification.findMany({
       where: { userId: user.id },
@@ -27,15 +24,14 @@ export async function GET(request: Request) {
 
     return NextResponse.json(notifications);
   } catch (error) {
-    return NextResponse.json({ error: "Erro ao buscar notificações" }, { status: 500 });
+    console.error("Erro API Notifications:", error);
+    return NextResponse.json({ error: "Erro interno" }, { status: 500 });
   }
 }
 
-// MARCAR COMO LIDO (Individual ou em Lote)
 export async function PATCH(request: Request) {
   try {
     const { ids, email, all } = await request.json();
-
     const whereClause: any = all ? { user: { email }, read: false } : { id: { in: ids } };
 
     await prisma.notification.updateMany({
@@ -49,16 +45,12 @@ export async function PATCH(request: Request) {
   }
 }
 
-// EXCLUIR (Individual ou em Lote)
 export async function DELETE(request: Request) {
   try {
     const { ids, email, all } = await request.json();
-
     const whereClause: any = all ? { user: { email } } : { id: { in: ids } };
 
-    await prisma.notification.deleteMany({
-      where: whereClause
-    });
+    await prisma.notification.deleteMany({ where: whereClause });
 
     return NextResponse.json({ success: true });
   } catch (error) {

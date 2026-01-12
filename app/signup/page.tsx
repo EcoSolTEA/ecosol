@@ -18,31 +18,51 @@ export default function SignupPage() {
     setLoading(true);
     setMessage(null);
 
-    // 1. Cadastro no Auth
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { emailRedirectTo: `${window.location.origin}/login` }
-    });
-
-    if (error) {
-      setMessage({ type: 'error', text: error.message });
-      setLoading(false);
-      return;
-    }
-
-    if (data.user) {
-      // 2. Sincronização com Prisma via API
-      const syncRes = await fetch("/api/user/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: data.user.email }),
+    try {
+      // 1. Cadastro no Supabase Auth
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { 
+          emailRedirectTo: `${window.location.origin}/login`,
+          // Opcional: Adicionar metadados se necessário
+          data: { display_name: email.split('@')[0] } 
+        }
       });
 
-      if (syncRes.ok) {
-        setMessage({ type: 'success', text: "Conta criada! Verifique seu e-mail para confirmar." });
-        setTimeout(() => router.push("/login"), 3000);
+      if (error) {
+        setMessage({ type: 'error', text: error.message });
+        setLoading(false);
+        return;
       }
+
+      // Se o usuário foi criado, o Supabase já disparou o e-mail internamente.
+      if (data.user) {
+        // 2. Sincronização em "Background" com o Prisma
+        // Não bloqueamos o feedback do usuário se a sincronização demorar um pouco
+        fetch("/api/user/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: data.user.email }),
+        }).catch(err => console.error("Erro na sincronização Prisma:", err));
+
+        // 3. Reporte Imediato ao Usuário
+        setMessage({ 
+          type: 'success', 
+          text: "Cadastro realizado com sucesso! Um link de confirmação foi enviado para o seu e-mail. Por favor, verifique sua caixa de entrada (e o spam)." 
+        });
+
+        // Limpa os campos para evitar cliques duplos
+        setEmail("");
+        setPassword("");
+        
+        // Opcional: Redirecionar após um tempo maior para o usuário ler a mensagem
+        // setTimeout(() => router.push("/login"), 6000);
+      }
+    } catch (err) {
+      setMessage({ type: 'error', text: "Ocorreu um erro inesperado no processamento." });
+    } finally {
+      setLoading(false);
     }
   }
 
