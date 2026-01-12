@@ -4,41 +4,48 @@ import Header from "../../../components/header";
 import { Input } from "../../../components/ui/input";
 import { Button } from "../../../components/ui/button";
 import { useRouter } from "next/navigation";
+import { loginAction } from "./actions"; // Importe a action
 
 export default function AdminLogin() {
-  const [user, setUser] = React.useState("");
   const [pass, setPass] = React.useState("");
+  const [error, setError] = React.useState("");
   const router = useRouter();
 
-  async function submit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    // Em produção, use uma rota de API para verificar e setar o cookie
-    if (user === "admin" && pass === "password") {
-      // Exemplo simplificado: o ideal é chamar uma API que define o cookie HttpOnly
-      document.cookie = `admin_token=${pass}; path=/; samesite=strict`;
+    setError("");
+
+    const result = await loginAction(pass);
+
+    if (result.success) {
+      // Agora o Middleware vai reconhecer o cookie HttpOnly
       router.push("/admin/dashboard");
+      router.refresh(); // Garante que o Next limpe o cache de rotas protegidas
+    } else {
+      setError(result.error || "Erro ao entrar");
     }
   }
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <Header />
-      <main className="mx-auto max-w-md p-6">
-        <h2 className="text-2xl font-semibold">Admin login</h2>
-        <form onSubmit={submit} className="mt-4 grid gap-3">
-          <Input
-            placeholder="Username"
-            value={user}
-            onChange={(e) => setUser(e.target.value)}
-          />
-          <Input
-            placeholder="Password"
-            type="password"
-            value={pass}
-            onChange={(e) => setPass(e.target.value)}
-          />
-          <Button type="submit">Sign in</Button>
-        </form>
+      <main className="mx-auto max-w-md p-6 mt-10">
+        <div className="bg-white p-8 rounded-xl shadow-sm border">
+          <h2 className="text-2xl font-bold text-center">Painel Admin</h2>
+          <form onSubmit={handleSubmit} className="mt-6 grid gap-4">
+            {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+            <Input
+              placeholder="Senha de acesso"
+              type="password"
+              value={pass}
+              onChange={(e) => setPass(e.target.value)}
+              required
+            />
+            <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700">
+              Entrar
+            </Button>
+          </form>
+        </div>
       </main>
     </div>
   );
