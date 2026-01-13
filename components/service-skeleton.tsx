@@ -3,39 +3,43 @@ import { Card } from "./ui/card";
 
 export default function ServiceSkeleton() {
   return (
-    /* - bg-white -> bg-card
-       - border-slate-50 -> border-border
-    */
-    <Card className="rounded-[2.5rem] p-3.5 border border-border bg-card animate-pulse">
+    /* Mantido exatamente o mesmo wrapper do ServiceCard */
+    <Card className="flex flex-col h-full border-border p-3.5 shadow-sm animate-pulse rounded-[2.5rem]">
       
-      {/* Área da Imagem: bg-muted para profundidade */}
-      <div className="w-full aspect-video bg-muted rounded-[1.8rem] mb-2.5" />
-      
-      <div className="space-y-1.5 px-0.5">
-        {/* Título */}
-        <div className="h-4 w-3/4 bg-muted rounded-lg" />
+      {/* 1. Imagem: aspect-video + rounded-[1.6rem] */}
+      <div className="aspect-video rounded-[1.6rem] bg-muted mb-2.5" />
+
+      {/* 2. Título e Descrição */}
+      <div className="flex-1 px-0.5">
+        {/* Simula o h3 (text-base) */}
+        <div className="h-4 w-3/4 bg-muted rounded-md mb-2" />
         
-        {/* Descrição: bg-muted/60 para ser mais discreto */}
-        <div className="space-y-1">
+        {/* Simula a descrição (text-[10px] - 2 linhas) */}
+        <div className="space-y-1.5">
           <div className="h-2 w-full bg-muted/60 rounded" />
-          <div className="h-2 w-4/5 bg-muted/60 rounded" />
+          <div className="h-2 w-[90%] bg-muted/60 rounded" />
         </div>
       </div>
 
-      {/* Divisor e Footer */}
-      <div className="mt-2 pt-2 border-t border-border space-y-2">
-        {/* Tag/Badge: bg-primary/10 para sugerir a cor do tema */}
-        <div className="h-3 w-14 bg-primary/10 rounded-md" />
+      {/* 3. Rodapé Estruturado (mt-3 pt-3 border-t) */}
+      <div className="mt-3 pt-3 border-t border-border space-y-3">
         
+        {/* Linha Superior: Categoria + Perfil */}
         <div className="flex items-center justify-between">
-          <div className="flex gap-1.5">
-            {/* Ícones de ação */}
-            <div className="h-7 w-7 bg-muted rounded-xl" />
-            <div className="h-7 w-7 bg-muted rounded-xl" />
-          </div>
-          
-          {/* Botão de Preço/Ação */}
-          <div className="h-7 w-16 bg-muted rounded-xl" />
+          {/* Badge da Categoria (bg-primary/10) */}
+          <div className="h-4 w-14 bg-primary/10 rounded-md" />
+
+          {/* Botão Perfil (h-6) */}
+          <div className="h-6 w-16 bg-muted rounded-lg" />
+        </div>
+
+        {/* Linha Inferior: Ícones de Contato */}
+        <div className="flex items-center gap-2">
+          {/* Simula 4 ícones de contato (círculos/rounded-full) */}
+          <div className="h-6 w-6 bg-muted rounded-full" />
+          <div className="h-6 w-6 bg-muted rounded-full" />
+          <div className="h-6 w-6 bg-muted rounded-full" />
+          <div className="h-6 w-6 bg-muted rounded-full" />
         </div>
       </div>
     </Card>
