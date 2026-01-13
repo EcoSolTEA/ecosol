@@ -3,7 +3,7 @@ import * as React from "react";
 import Link from "next/link";
 import Header from "@/components/header";
 import { Button } from "@/components/ui/button";
-import DashboardList from "./dashboard-list"; // O novo componente que criamos
+import DashboardList from "./dashboard-list";
 
 export default function AdminDashboard() {
   const [pending, setPending] = React.useState<any[]>([]);
@@ -11,7 +11,7 @@ export default function AdminDashboard() {
 
   async function load() {
     try {
-      const res = await fetch("/api/admin/pending");
+      const res = await fetch("/api/admin/pending", { cache: 'no-store' });
       if (!res.ok) throw new Error("Erro ao carregar");
       const data = await res.json();
       setPending(data);
@@ -24,7 +24,14 @@ export default function AdminDashboard() {
 
   React.useEffect(() => { load(); }, []);
 
-  if (loading) return <div className="p-10 text-center font-bold text-slate-400 animate-pulse">Carregando painel...</div>;
+  if (loading) return (
+    <div className="min-h-screen bg-slate-50 flex flex-col">
+      <Header />
+      <div className="flex-1 flex items-center justify-center">
+        <div className="p-10 text-center font-bold text-slate-400 animate-pulse uppercase tracking-[0.3em] text-xs">Carregando painel...</div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 pb-32">
@@ -48,7 +55,6 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Componente de Lista que abstrai toda a lógica de seleção e batch */}
         <DashboardList initialItems={pending} onRefresh={load} />
       </main>
     </div>

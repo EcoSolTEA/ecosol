@@ -5,10 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import ServiceCard from "@/components/service-card";
 import { approveServicesBatchAction, removeServicesBatchAction } from "@/app/provider/actions";
-import { CheckCircle2, Trash2, Check, Loader2, MousePointer2 } from "lucide-react";
+import { CheckCircle2, Trash2, Check, Loader2 } from "lucide-react";
 import Swal from 'sweetalert2';
 
-// Configuração padrão dos Toasts do SweetAlert2
 const Toast = Swal.mixin({
   toast: true,
   position: 'top-end',
@@ -39,7 +38,6 @@ export default function DashboardList({ initialItems, onRefresh }: { initialItem
     const isApprove = type === "approve";
     const count = selectedIds.length;
     
-    // 1. Confirmação Inicial (Popup Central)
     const result = await Swal.fire({
       title: isApprove ? 'Aprovar Negócios?' : 'Recusar Negócios?',
       text: `Deseja processar ${count} ${count > 1 ? 'itens' : 'item'} agora?`,
@@ -57,24 +55,25 @@ export default function DashboardList({ initialItems, onRefresh }: { initialItem
 
     if (result.isConfirmed) {
       setIsProcessing(true);
+      Swal.fire({
+        title: 'Sincronizando...',
+        didOpen: () => { Swal.showLoading(); },
+        allowOutsideClick: false,
+        customClass: { popup: 'rounded-[2.5rem]' }
+      });
 
       try {
-        // 2. Execução da Action no Servidor
         const res = isApprove 
           ? await approveServicesBatchAction(selectedIds) 
           : await removeServicesBatchAction(selectedIds);
         
         if (res.success) {
-          // 3. Sincronização automática com o servidor
           await onRefresh(); 
-          
-          // 4. Feedback via TOAST (Canto Superior)
           Toast.fire({
             icon: 'success',
             title: isApprove ? 'Aprovado com sucesso!' : 'Removido com sucesso!',
             text: `${count} negócios foram atualizados.`
           });
-
           setSelectedIds([]);
         } else {
           throw new Error();
@@ -87,14 +86,15 @@ export default function DashboardList({ initialItems, onRefresh }: { initialItem
         });
       } finally {
         setIsProcessing(false);
+        Swal.close();
       }
     }
   };
 
   return (
-    <div className={`space-y-6 transition-all duration-500 ${isProcessing ? 'opacity-60 grayscale-[0.5]' : 'opacity-100'}`}>
+    <div className={`space-y-6 transition-all duration-500 ${isProcessing ? 'opacity-60 pointer-events-none' : 'opacity-100'}`}>
       
-      {/* BARRA DE STATUS / SELEÇÃO */}
+      {/* BARRA DE SELEÇÃO SUPERIOR */}
       {initialItems.length > 0 && (
         <div className="flex items-center justify-between px-6 py-4 bg-white border border-slate-200 rounded-3xl shadow-sm">
           <div className="flex items-center gap-4">
@@ -132,7 +132,6 @@ export default function DashboardList({ initialItems, onRefresh }: { initialItem
             >
               <div className="space-y-4">
                 <ServiceCard service={p} />
-                
                 <div className="flex gap-2 mt-4 pt-4 border-t border-slate-100">
                   <Button 
                     disabled={isProcessing}
@@ -162,16 +161,18 @@ export default function DashboardList({ initialItems, onRefresh }: { initialItem
         ))}
       </div>
 
-      {/* BARRA FLUTUANTE (DOCK) */}
+      {/* BARRA FLUTUANTE (DOCK) - PADRONIZADA PARA BRANCO/AZUL */}
       {selectedIds.length > 0 && (
-        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 flex items-center gap-8 bg-slate-900 border border-slate-800 px-8 py-5 rounded-[2.5rem] shadow-[0_30px_60px_rgba(0,0,0,0.3)] animate-in fade-in slide-in-from-bottom-10 duration-500">
-          <div className="flex items-center gap-4 pr-8 border-r border-slate-700">
-            <div className="h-12 w-12 bg-blue-600 text-white rounded-2xl flex items-center justify-center font-black text-lg rotate-3 shadow-lg shadow-blue-500/20">
+        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 flex items-center gap-8 bg-white border-2 border-blue-600 px-8 py-5 rounded-[2.5rem] shadow-[0_20px_40px_rgba(0,0,0,0.15)] animate-in fade-in slide-in-from-bottom-10 duration-500">
+          <div className="flex items-center gap-4 pr-8 border-r border-slate-100">
+            <div className="h-12 w-12 bg-blue-600 text-white rounded-2xl flex items-center justify-center font-black text-lg shadow-lg shadow-blue-500/20">
               {isProcessing ? <Loader2 className="h-6 w-6 animate-spin" /> : selectedIds.length}
             </div>
             <div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-1">Ação em Lote</p>
-              <p className="text-sm font-bold text-white leading-none">Selecionados</p>
+              <p className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em] leading-none mb-1">Itens</p>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">
+                {isProcessing ? "Sincronizando" : "Selecionados"}
+              </p>
             </div>
           </div>
           
@@ -181,13 +182,13 @@ export default function DashboardList({ initialItems, onRefresh }: { initialItem
               onClick={() => handleBatchAction("approve")} 
               className="bg-blue-600 hover:bg-blue-700 text-white font-black rounded-2xl flex gap-3 h-12 px-8 text-xs uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-blue-500/20"
             >
-              {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-              {isProcessing ? "Sincronizando..." : "Aprovar"}
+              <CheckCircle2 className="h-4 w-4" /> {isProcessing ? "Aprovando..." : "Aprovar"}
             </Button>
             <Button 
               disabled={isProcessing}
               onClick={() => handleBatchAction("remove")} 
-              className="bg-transparent text-red-400 hover:bg-red-500/10 hover:text-red-300 font-black rounded-2xl flex gap-3 h-12 px-6 text-xs uppercase tracking-widest transition-all"
+              variant="ghost"
+              className="text-red-500 hover:bg-red-50 hover:text-red-600 font-black rounded-2xl flex gap-3 h-12 px-6 text-xs uppercase tracking-widest transition-all active:scale-95"
             >
               <Trash2 className="h-4 w-4" /> Recusar
             </Button>

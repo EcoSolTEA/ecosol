@@ -11,12 +11,19 @@ export default function AdminTrashPage() {
   const [loading, setLoading] = React.useState(true);
   const router = useRouter();
 
+  // Função de carga com bloqueio de cache
   async function loadTrashed() {
     try {
-      const res = await fetch("/api/admin/trash"); // Certifique-se de que esta rota retorna os deletados
+      // Adicionamos 'no-store' para garantir que o fetch busque dados novos toda vez
+      const res = await fetch("/api/admin/trash", { 
+        cache: 'no-store',
+        headers: { 'Pragma': 'no-cache', 'Cache-Control': 'no-cache' }
+      }); 
+      
       if (res.ok) {
         const data = await res.json();
         setItems(data);
+        router.refresh(); // Sincroniza componentes de servidor
       }
     } catch (err) {
       console.error("Erro ao carregar lixeira:", err);
