@@ -1,164 +1,131 @@
-"use client";
-import * as React from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useRouter } from "next/navigation";
+import prisma from "@/lib/prisma";
 import Header from "@/components/header";
-import { supabase } from "@/lib/supabase";
-import { Loader2, Save, ArrowLeft, User, Phone, FileText } from "lucide-react";
-import Swal from 'sweetalert2';
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { createServerClient } from '@supabase/ssr';
+import NotificationActions from "@/components/notification-actions";
+import { UserCircle, Settings, Bell, Eye, MessageSquare } from "lucide-react";
 
-const Toast = Swal.mixin({
-  toast: true,
-  position: 'top-end',
-  showConfirmButton: false,
-  timer: 3000,
-  timerProgressBar: true
-});
+export default async function ProfilePage() {
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { getAll: () => cookieStore.getAll() } }
+  );
 
-const formatPhoneNumber = (value: string) => {
-  if (!value) return value;
-  const phoneNumber = value.replace(/[^\d]/g, "");
-  const len = phoneNumber.length;
-  if (len < 3) return phoneNumber;
-  if (len < 7) return `(${phoneNumber.slice(0, 2)}) ${phoneNumber.slice(2)}`;
-  return `(${phoneNumber.slice(0, 2)}) ${phoneNumber.slice(2, 7)}-${phoneNumber.slice(7, 11)}`;
-};
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
-export default function EditProfile() {
-  const [form, setForm] = React.useState({ name: "", phone: "", bio: "" });
-  const [userEmail, setUserEmail] = React.useState("");
-  const [loading, setLoading] = React.useState(true);
-  const [saving, setSaving] = React.useState(false);
-  const router = useRouter();
+  let dbUser = await prisma.user.findUnique({
+    where: { email: user.email! },
+    include: { notifications: { orderBy: { createdAt: 'desc' }, take: 5 } }
+  });
 
-  React.useEffect(() => {
-    async function loadInitialData() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user?.email) {
-        setUserEmail(user.email);
-        try {
-          const res = await fetch(`/api/user/profile?email=${user.email}`);
-          if (res.ok) {
-            const data = await res.json();
-            setForm({
-              name: data.name || "",
-              phone: data.phone || "",
-              bio: data.bio || ""
-            });
-          }
-        } catch (err) { console.error(err); }
-      }
-      setLoading(false);
-    }
-    loadInitialData();
-  }, []);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setSaving(true);
-
-    Swal.fire({
-      title: 'Salvando...',
-      didOpen: () => { Swal.showLoading(); },
-      allowOutsideClick: false,
-      customClass: { popup: 'rounded-[2rem]' }
+  if (!dbUser) {
+    dbUser = await prisma.user.create({
+      data: {
+        email: user.email!,
+        name: user.user_metadata?.name || user.email?.split('@')[0],
+        role: "USER"
+      },
+      include: { notifications: true }
     });
-
-    const res = await fetch("/api/user/profile", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, email: userEmail }),
-    });
-
-    if (res.ok) {
-      Swal.close();
-      Toast.fire({ icon: 'success', title: 'Perfil atualizado!' });
-      router.push("/profile");
-      router.refresh(); 
-    } else {
-      setSaving(false);
-      Swal.fire({ icon: 'error', title: 'Erro ao salvar' });
-    }
   }
 
-  if (loading) return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      <Header />
-      <div className="flex-1 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
-      </div>
-    </div>
-  );
+  const [service, unreadCount, totalCount] = await Promise.all([
+    prisma.service.findFirst({ where: { email: user.email! } }),
+    prisma.notification.count({ where: { userId: dbUser.id, read: false } }),
+    prisma.notification.count({ where: { userId: dbUser.id } })
+  ]);
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
       <Header />
-      <main className="max-w-2xl mx-auto p-6 py-12">
-        <Button 
-          variant="ghost" 
-          onClick={() => router.back()} 
-          className="mb-6 hover:bg-white rounded-full gap-2 text-slate-500 font-bold"
-        >
-          <ArrowLeft className="w-4 h-4" /> Voltar
-        </Button>
-
-        <form onSubmit={handleSubmit} className="bg-white p-8 md:p-12 rounded-[2.5rem] border-none shadow-2xl shadow-slate-200/50 space-y-8">
-          <header>
-            <h2 className="text-3xl font-black text-slate-900 tracking-tighter">Editar Perfil</h2>
-            <p className="text-slate-500 font-medium">Suas informações na rede Ecosol.</p>
-          </header>
-
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">
-                <User className="w-3 h-3" /> Nome Completo
-              </label>
-              <Input 
-                value={form.name} 
-                onChange={e => setForm({...form, name: e.target.value})} 
-                className="h-14 rounded-2xl border-slate-100 bg-slate-50 focus:bg-white font-bold text-base"
-                placeholder="Como você quer ser chamado?"
-              />
+      <main className="mx-auto max-w-5xl p-6 py-12">
+        
+        {/* HEADER DO PERFIL */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6">
+          <div className="flex items-center gap-5">
+            <div className="w-20 h-20 bg-blue-600 rounded-[2rem] flex items-center justify-center text-white shadow-xl shadow-blue-200">
+              <UserCircle className="w-12 h-12" />
             </div>
-
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">
-                <Phone className="w-3 h-3" /> WhatsApp
-              </label>
-              <Input 
-                value={form.phone} 
-                onChange={e => setForm({...form, phone: formatPhoneNumber(e.target.value)})} 
-                className="h-14 rounded-2xl border-slate-100 bg-slate-50 font-bold text-base"
-                placeholder="(00) 00000-0000"
-                maxLength={15}
-              />
+            <div>
+              <h1 className="text-4xl font-black text-slate-900 tracking-tighter">Meu Perfil</h1>
+              <p className="text-slate-500 font-medium italic">{user.email}</p>
             </div>
+          </div>
+          <Link href="/profile/edit">
+            <Button className="bg-white hover:bg-slate-50 text-slate-900 border-none shadow-lg rounded-2xl px-6 h-12 font-black text-xs uppercase tracking-widest gap-2">
+              <Settings className="w-4 h-4" /> Configurações
+            </Button>
+          </Link>
+        </div>
 
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">
-                <FileText className="w-3 h-3" /> Bio / Descrição
-              </label>
-              <textarea 
-                className="w-full border-0 bg-slate-50 rounded-[1.5rem] p-5 text-base font-medium h-40 outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-inner"
-                placeholder="Conte um pouco sobre você ou seu trabalho..."
-                value={form.bio} 
-                onChange={e => setForm({...form, bio: e.target.value})}
-              />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+          {/* INFO CARD */}
+          <div className="lg:col-span-2 bg-white p-10 rounded-[2.5rem] shadow-xl shadow-slate-200/50 flex flex-col justify-center">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">Nome cadastrado</label>
+                <p className="text-xl font-black text-slate-800 tracking-tight">{dbUser.name || "Não informado"}</p>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">Contato WhatsApp</label>
+                <p className="text-xl font-black text-slate-800 tracking-tight">{dbUser.phone || "Não informado"}</p>
+              </div>
             </div>
           </div>
 
-          <div className="pt-4 flex flex-col sm:flex-row gap-4">
-             <Button 
-               type="submit" 
-               className="flex-1 bg-blue-600 hover:bg-blue-700 rounded-2xl h-14 font-black text-lg shadow-xl shadow-blue-200 gap-2" 
-               disabled={saving}
-             >
-               {saving ? <Loader2 className="animate-spin" /> : <Save className="w-5 h-5" />}
-               Salvar Alterações
-             </Button>
+          {/* VISUALIZAÇÕES CARD */}
+          <div className="bg-slate-900 p-10 rounded-[2.5rem] shadow-2xl flex flex-col items-center justify-center text-center relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
+              <Eye className="w-24 h-24 text-white" />
+            </div>
+            <h3 className="text-6xl font-black text-white tracking-tighter">{service?.views || 0}</h3>
+            <p className="text-blue-400 text-[11px] font-black uppercase tracking-[0.2em] mt-2">Visitas no seu Card</p>
           </div>
-        </form>
+        </div>
+
+        {/* NOTIFICAÇÕES */}
+        <section className="bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 overflow-hidden">
+          <div className="px-10 py-8 border-b border-slate-50 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-blue-50 rounded-2xl">
+                <Bell className="w-6 h-6 text-blue-600" />
+              </div>
+              <div>
+                <h2 className="text-xl font-black text-slate-800 tracking-tight">Notificações</h2>
+                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Atividade da sua conta</p>
+              </div>
+            </div>
+            <NotificationActions email={user.email!} unreadCount={unreadCount} totalCount={totalCount} />
+          </div>
+          
+          <div className="p-4 sm:p-8 space-y-4">
+            {dbUser.notifications.length === 0 ? (
+              <div className="py-12 text-center">
+                <MessageSquare className="w-12 h-12 text-slate-100 mx-auto mb-3" />
+                <p className="text-slate-400 font-bold">Nenhuma notificação por enquanto.</p>
+              </div>
+            ) : (
+              dbUser.notifications.map((n) => (
+                <div key={n.id} className={`group p-5 rounded-3xl border transition-all duration-300 ${n.read ? 'bg-white border-slate-100 opacity-60' : 'bg-blue-50/50 border-blue-100 shadow-sm'}`}>
+                  <div className="flex justify-between items-start gap-6">
+                    <p className={`text-sm leading-relaxed ${n.read ? 'text-slate-500 font-medium' : 'text-slate-900 font-black'}`}>
+                      {n.message}
+                    </p>
+                    <span className="text-[10px] font-black text-slate-400 uppercase whitespace-nowrap pt-1">
+                      {new Date(n.createdAt).toLocaleDateString('pt-BR')}
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </section>
       </main>
     </div>
   );

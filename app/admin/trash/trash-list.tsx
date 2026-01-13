@@ -3,11 +3,11 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { restoreServicesBatchAction, deleteServicesBatchAction } from "@/app/provider/actions";
-import { Trash2, RotateCcw, AlertCircle, Check, Loader2 } from "lucide-react";
+import { Trash2, RotateCcw, AlertCircle, Loader2, Check } from "lucide-react";
 import Image from "next/image";
 import Swal from 'sweetalert2';
 
-// Configuração dos Toasts (Notificações rápidas)
+// Configuração dos Toasts (Notificações rápidas no canto)
 const Toast = Swal.mixin({
   toast: true,
   position: 'top-end',
@@ -39,7 +39,6 @@ export default function TrashList({ items, onRefresh }: TrashListProps) {
     setSelected(selected.length === items.length ? [] : items.map(i => i.id));
   };
 
-  // Lógica Unificada de Ação (Aprovar/Eliminar)
   const handleAction = async (type: "restore" | "delete") => {
     const isRestore = type === "restore";
     const count = selected.length;
@@ -48,7 +47,7 @@ export default function TrashList({ items, onRefresh }: TrashListProps) {
       title: isRestore ? 'Restaurar Itens?' : 'Eliminar Permanente?',
       text: isRestore 
         ? `Deseja retornar ${count} cadastros para a lista ativa?` 
-        : `Atenção: ${count} itens serão apagados para sempre do banco de dados.`,
+        : `Atenção: ${count} itens serão apagados para sempre do sistema.`,
       icon: isRestore ? 'question' : 'warning',
       showCancelButton: true,
       confirmButtonColor: isRestore ? '#2563eb' : '#ef4444',
@@ -65,7 +64,6 @@ export default function TrashList({ items, onRefresh }: TrashListProps) {
     if (result.isConfirmed) {
       setIsProcessing(true);
       
-      // Mostra loading no centro enquanto processa
       Swal.fire({
         title: 'Sincronizando...',
         didOpen: () => { Swal.showLoading(); },
@@ -79,12 +77,12 @@ export default function TrashList({ items, onRefresh }: TrashListProps) {
           : await deleteServicesBatchAction(selected);
         
         if (res.success) {
-          // Sincronização automática com o servidor
+          // Fetch automático para sincronizar com o servidor
           await onRefresh();
           
           Toast.fire({
             icon: 'success',
-            title: isRestore ? 'Restaurados com sucesso!' : 'Eliminados do sistema!'
+            title: isRestore ? 'Restaurados com sucesso!' : 'Eliminados do banco!'
           });
           
           setSelected([]);
@@ -107,41 +105,45 @@ export default function TrashList({ items, onRefresh }: TrashListProps) {
   return (
     <div className={`relative transition-all duration-500 ${isProcessing ? 'opacity-60 pointer-events-none' : ''}`}>
       
-      {/* BARRA DE AÇÕES FLUTUANTE (DOCK) */}
+      {/* BARRA DE AÇÕES FLUTUANTE - PADRÃO BRANCO COM BORDA AZUL */}
       {selected.length > 0 && (
-        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 flex items-center gap-8 bg-slate-900 border border-slate-800 px-8 py-5 rounded-[2.5rem] shadow-[0_30px_60px_rgba(0,0,0,0.3)] animate-in fade-in slide-in-from-bottom-10 duration-500">
-          <div className="flex items-center gap-4 pr-8 border-r border-slate-700">
-            <div className="h-12 w-12 bg-blue-600 text-white rounded-2xl flex items-center justify-center font-black text-lg rotate-3 shadow-lg shadow-blue-500/20">
-              {isProcessing ? <Loader2 className="h-6 w-6 animate-spin" /> : selected.length}
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 flex items-center gap-6 bg-white border-2 border-blue-600 px-8 py-4 rounded-full shadow-[0_20px_40px_rgba(0,0,0,0.15)] animate-in fade-in slide-in-from-bottom-8 duration-300">
+          <div className="flex items-center gap-4 pr-6 border-r border-slate-100">
+            <div className="h-10 w-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-black text-sm shadow-lg shadow-blue-200">
+              {isProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : selected.length}
             </div>
             <div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-1">Gerenciamento</p>
-              <p className="text-sm font-bold text-white leading-none">Selecionados</p>
+              <p className="text-[10px] font-black text-slate-900 uppercase tracking-widest leading-none mb-1">
+                Itens
+              </p>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">
+                {isProcessing ? "Sincronizando" : "Selecionados"}
+              </p>
             </div>
           </div>
           
-          <div className="flex gap-4">
+          <div className="flex gap-3">
             <Button 
               onClick={() => handleAction("restore")} 
               disabled={isProcessing}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-black rounded-2xl flex gap-3 h-12 px-8 text-xs uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-blue-500/20"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-black rounded-full flex gap-2 h-10 px-6 text-[11px] uppercase tracking-wider transition-all active:scale-95 shadow-lg shadow-blue-200"
             >
-              {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
-              Restaurar
+              <RotateCcw className="h-4 w-4" /> Restaurar Seleção
             </Button>
             <Button 
               onClick={() => handleAction("delete")} 
               disabled={isProcessing}
-              className="bg-transparent text-red-400 hover:bg-red-500/10 hover:text-red-300 font-black rounded-2xl flex gap-3 h-12 px-6 text-xs uppercase tracking-widest transition-all"
+              variant="ghost" 
+              className="text-red-500 hover:bg-red-50 hover:text-red-600 font-black rounded-full flex gap-2 h-10 px-6 text-[11px] uppercase tracking-wider transition-all active:scale-95"
             >
-              <Trash2 className="h-4 w-4" /> Eliminar
+              <Trash2 className="h-4 w-4" /> Eliminar Tudo
             </Button>
           </div>
         </div>
       )}
 
       {/* TABELA PADRONIZADA */}
-      <div className="bg-white rounded-[2.5rem] border-none shadow-2xl shadow-slate-200/50 overflow-hidden">
+      <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
         <table className="w-full text-left">
           <thead className="bg-slate-50/50 border-b border-slate-100">
             <tr className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
@@ -221,7 +223,7 @@ export default function TrashList({ items, onRefresh }: TrashListProps) {
             <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
               <span className="text-4xl grayscale opacity-30">♻️</span>
             </div>
-            <p className="text-slate-400 font-black uppercase tracking-[0.3em] text-xs">A lixeira está vazia</p>
+            <p className="text-slate-400 font-black uppercase tracking-[0.3em] text-xs">Lixeira Vazia</p>
           </div>
         )}
       </div>
