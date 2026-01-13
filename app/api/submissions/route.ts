@@ -1,3 +1,5 @@
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import nodemailer from "nodemailer";
@@ -11,30 +13,64 @@ const transporter = nodemailer.createTransport({
 });
 
 export async function POST(req: Request) {
+  // 1. CORREÇÃO VITAL: await cookies() para Next.js moderno (2025/2026)
+  const cookieStore = await cookies()
+  
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          // Agora o TS reconhece o getAll() pois o cookieStore foi "aguardado"
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              // Versão compatível com Next.js moderno
+              cookieStore.set({ name, value, ...options })
+            )
+          } catch (error) {
+            // Silencia erros se chamado em contexto onde cookies não podem ser definidos
+          }
+        },
+      },
+    }
+  )
+
   try {
+    // 2. VERIFICAÇÃO DE SEGURANÇA
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return NextResponse.json(
+        { ok: false, error: "Acesso não autorizado. Faça login para continuar." },
+        { status: 401 }
+      )
+    }
+
     const body = await req.json();
-    
-    // 1. Definição Robusta da URL (Garante que nunca seja undefined)
     const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://ecosol-omega.vercel.app";
 
-    // 2. Cria o registro do serviço no banco
+    // 3. REGISTRO NO PRISMA (Usando o e-mail autenticado do Supabase)
     const created = await prisma.service.create({ 
-      data: { ...body, approved: false } 
+      data: { 
+        ...body, 
+        approved: false,
+        email: user.email 
+      } 
     });
 
     if (created.id) {
-      // 3. BUSCA DINÂMICA DE ADMINS
-      // Buscamos todos os usuários com papel ADMIN
+      // 4. LOGÍSTICA DE NOTIFICAÇÃO (ADM)
       const admins = await prisma.user.findMany({
-        where: {
-          role: 'ADMIN' // Se o seu banco for Case-Sensitive (Postgres), mantenha exatamente como está no Prisma Studio
-        },
+        where: { role: 'ADMIN' },
         select: { email: true }
       });
 
       const emailPromises = [];
 
-      // 4. LOGÍSTICA DE NOTIFICAÇÃO PARA ADMINS
       if (admins && admins.length > 0) {
         admins.forEach(admin => {
           if (!admin.email) return;
@@ -62,12 +98,12 @@ export async function POST(req: Request) {
         });
       }
 
-      // 5. NOTIFICAÇÃO PARA O OWNER (CRIADOR)
-      if (body.email) {
+      // 5. NOTIFICAÇÃO PARA O OWNER (USUÁRIO LOGADO)
+      if (user.email) {
         emailPromises.push(
           transporter.sendMail({
             from: `"Ecosol" <${process.env.GMAIL_USER}>`,
-            to: body.email,
+            to: user.email,
             subject: '🌿 Recebemos seu cadastro - Ecosol',
             html: `
               <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 20px; padding: 30px;">
@@ -84,8 +120,7 @@ export async function POST(req: Request) {
         );
       }
 
-      // 6. DISPARO SINCRONIZADO
-      // Promise.all garante que todas as mensagens saiam antes de fechar a conexão
+      // Envia todos os e-mails simultaneamente
       await Promise.all(emailPromises);
     }
 

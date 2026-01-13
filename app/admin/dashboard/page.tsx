@@ -5,14 +5,24 @@ import Header from "@/components/header";
 import { Button } from "@/components/ui/button";
 import DashboardList from "./dashboard-list";
 import { Loader2, Trash2, LayoutDashboard } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 export default function AdminDashboard() {
   const [pending, setPending] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [isAdmin, setIsAdmin] = React.useState(false);
 
   async function load() {
     try {
-      // Logística Anti-Cache para dados sempre frescos
+      // 1. Verificação de Identidade e Role via API
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.email) {
+        const roleRes = await fetch(`/api/user/role?email=${session.user.email}`);
+        const { role } = await roleRes.json();
+        setIsAdmin(role === 'ADMIN');
+      }
+
+      // 2. Logística Anti-Cache para dados sempre frescos
       const res = await fetch("/api/admin/pending", { 
         cache: 'no-store',
         headers: { 'Pragma': 'no-cache', 'Cache-Control': 'no-cache' }
@@ -21,7 +31,7 @@ export default function AdminDashboard() {
       const data = await res.json();
       setPending(data);
     } catch (err) {
-      console.error(err);
+      console.error("Erro na carga do painel:", err);
     } finally {
       setLoading(false);
     }
@@ -57,19 +67,22 @@ export default function AdminDashboard() {
           </div>
           
           <div className="flex items-center gap-3 w-full sm:w-auto">
-            <Link href="/admin/trash" className="flex-1 sm:flex-none">
-              <Button variant="outline" className="w-full rounded-2xl border-border bg-card font-bold h-12 px-6 shadow-sm hover:bg-muted gap-2">
-                <Trash2 size={18} /> Lixeira
-              </Button>
-            </Link>
+            {/* O link da lixeira também pode ser condicional se desejar */}
+            {isAdmin && (
+              <Link href="/admin/trash" className="flex-1 sm:flex-none">
+                <Button variant="outline" className="w-full rounded-2xl border-border bg-card font-bold h-12 px-6 shadow-sm hover:bg-muted gap-2">
+                  <Trash2 size={18} /> Lixeira
+                </Button>
+              </Link>
+            )}
             <div className="bg-primary text-primary-foreground px-6 py-2.5 rounded-2xl text-sm font-black shadow-lg shadow-primary/20">
               {pending.length} Pendentes
             </div>
           </div>
         </div>
 
-        {/* Lista que agora entende o Dark Mode */}
-        <DashboardList initialItems={pending} onRefresh={load} />
+        {/* Passamos isAdmin para o filho gerenciar as ações de escrita */}
+        <DashboardList initialItems={pending} onRefresh={load} isAdmin={isAdmin} />
       </main>
     </div>
   );

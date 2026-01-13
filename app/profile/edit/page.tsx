@@ -8,13 +8,9 @@ import { supabase } from "@/lib/supabase";
 import { Loader2, Save, ArrowLeft, User, Phone, FileText } from "lucide-react";
 import Swal from 'sweetalert2';
 
-const Toast = Swal.mixin({
-  toast: true,
-  position: 'top-end',
-  showConfirmButton: false,
-  timer: 3000,
-  timerProgressBar: true
-});
+// Importação da Central de Estilo e do Gestor de Notificações Automático
+import { swalConfig } from "@/lib/swal";
+import { notify } from "@/lib/toast";
 
 const formatPhoneNumber = (value: string) => {
   if (!value) return value;
@@ -58,12 +54,13 @@ export default function EditProfile() {
     e.preventDefault();
     setSaving(true);
 
+    // 1. Modal de Sincronização Neon (Padronizado via lib/swal)
     Swal.fire({
+      ...swalConfig,
       title: 'Sincronizando...',
-      text: 'Atualizando seus dados na rede.',
-      didOpen: () => { Swal.showLoading(); },
+      text: 'Atualizando seus dados na rede Ecosol.',
+      didOpen: () => Swal.showLoading(),
       allowOutsideClick: false,
-      customClass: { popup: 'rounded-[2rem] bg-card text-foreground border border-border' }
     });
 
     try {
@@ -73,26 +70,18 @@ export default function EditProfile() {
         body: JSON.stringify({ ...form, email: userEmail }),
       });
 
+      // 2. GESTOR AUTOMÁTICO: Fecha o Swal e dispara o Toast Neon Simétrico
+      notify.auto(res.ok, 'Perfil atualizado com sucesso!', 'Erro ao salvar alterações');
+
       if (res.ok) {
-        Swal.close();
-        Toast.fire({ 
-          icon: 'success', 
-          title: 'Perfil atualizado!',
-          background: 'hsl(var(--card))',
-          color: 'hsl(var(--foreground))'
-        });
         router.push("/profile");
         router.refresh(); 
-      } else {
-        throw new Error();
       }
     } catch (err) {
+      // Notificação de erro automática
+      notify.error("Falha na conexão com o servidor.");
+    } finally {
       setSaving(false);
-      Swal.fire({ 
-        icon: 'error', 
-        title: 'Erro ao salvar',
-        customClass: { popup: 'rounded-[2rem] bg-card text-foreground' }
-      });
     }
   }
 
@@ -134,7 +123,6 @@ export default function EditProfile() {
           </header>
 
           <div className="space-y-8">
-            {/* Campo: Nome */}
             <div className="space-y-3">
               <label className="flex items-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-[0.25em] ml-1">
                 <User className="w-3.5 h-3.5" /> Nome Completo
@@ -147,7 +135,6 @@ export default function EditProfile() {
               />
             </div>
 
-            {/* Campo: WhatsApp */}
             <div className="space-y-3">
               <label className="flex items-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-[0.25em] ml-1">
                 <Phone className="w-3.5 h-3.5" /> WhatsApp Comercial
@@ -161,7 +148,6 @@ export default function EditProfile() {
               />
             </div>
 
-            {/* Campo: Bio / Descrição */}
             <div className="space-y-3">
               <label className="flex items-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-[0.25em] ml-1">
                 <FileText className="w-3.5 h-3.5" /> Bio / Descrição Pessoal

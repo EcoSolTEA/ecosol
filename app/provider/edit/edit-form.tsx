@@ -34,12 +34,11 @@ import {
 import { cn } from "@/lib/utils";
 import Swal from 'sweetalert2';
 
-// Importação da lista padronizada
+// --- Importação da Central de Estilo e Notificações Padronizada ---
+import { swalConfig } from "@/lib/swal";
+import { notify } from "@/lib/toast";
 import { SERVICE_CATEGORIES } from "@/src/constants/categories";
 
-/**
- * Ícone do Instagram em SVG (Evita o deprecated do Lucide)
- */
 const InstagramIcon = ({ className }: { className?: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
     <rect width="20" height="20" x="2" y="2" rx="5" ry="5" /><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" /><line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
@@ -93,6 +92,7 @@ export default function EditServiceForm({ service }: { service: any }) {
       setImagePreview(publicUrl);
     } catch (err: any) {
       setError("Erro no upload: " + err.message);
+      notify.error("Falha ao carregar imagem.");
     } finally {
       setUploading(false);
     }
@@ -108,6 +108,15 @@ export default function EditServiceForm({ service }: { service: any }) {
     e.preventDefault();
     setLoading(true);
     setError("");
+
+    // 1. Modal de Sincronização Neon Centralizado
+    Swal.fire({
+      ...swalConfig,
+      title: 'Sincronizando...',
+      text: 'Salvando as novas informações do negócio.',
+      didOpen: () => { Swal.showLoading(); },
+      allowOutsideClick: false,
+    });
     
     try {
       const normalizedData = {
@@ -117,65 +126,67 @@ export default function EditServiceForm({ service }: { service: any }) {
 
       const result = await updateServiceAction(service.id, normalizedData);
       
+      // 2. GESTOR AUTOMÁTICO: Fecha Swal e dispara Toast Neon
+      notify.auto(result.success, 'Alterações salvas com sucesso!', 'Não foi possível salvar as alterações.');
+
       if (result.success) {
-        await Swal.fire({
-          title: 'Sucesso!',
-          text: 'As alterações foram salvas com sucesso.',
-          icon: 'success',
-          confirmButtonColor: 'hsl(var(--primary))',
-          customClass: { popup: 'rounded-[2rem] bg-card text-foreground border border-border' }
-        });
         router.push(`/provider/${service.id}`);
         router.refresh();
       } else {
         setError("Não foi possível salvar as alterações.");
-        setLoading(false);
       }
     } catch (err) {
       setError("Falha na comunicação com o servidor.");
+      notify.error("Ocorreu uma falha na sincronização.");
+    } finally {
       setLoading(false);
     }
   }
 
   async function handleDelete() {
+    // 3. Confirmação Neon com Botão Destrutivo Simétrico (Não Chapado)
     const result = await Swal.fire({
+      ...swalConfig,
       title: 'Tem certeza?',
       text: "Deseja excluir permanentemente este cadastro? Esta ação é irreversível.",
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: 'hsl(var(--destructive))',
-      cancelButtonColor: 'hsl(var(--muted))',
       confirmButtonText: 'Sim, excluir permanentemente',
-      cancelButtonText: 'Cancelar',
-      reverseButtons: true,
       customClass: {
-        popup: 'rounded-[2rem] bg-card text-foreground border border-border',
-        confirmButton: 'rounded-xl font-bold py-3 px-6',
-        cancelButton: 'rounded-xl font-bold py-3 px-6'
+        ...swalConfig.customClass,
+        confirmButton: swalConfig.customClass.confirmButton
+          .replace('bg-primary', 'bg-destructive')
+          .replace('shadow-primary/30', 'shadow-destructive/30')
       }
     });
 
     if (result.isConfirmed) {
       setIsDeleting(true);
       setError("");
+      
+      Swal.fire({
+        ...swalConfig,
+        title: 'Excluindo...',
+        didOpen: () => { Swal.showLoading(); },
+        allowOutsideClick: false,
+      });
+
       try {
-        const result = await deleteServiceAction(service.id);
-        if (result.success) {
-          await Swal.fire({
-            title: 'Excluído!',
-            text: 'O cadastro foi removido do sistema.',
-            icon: 'success',
-            confirmButtonColor: 'hsl(var(--primary))',
-            customClass: { popup: 'rounded-[2rem] bg-card text-foreground border border-border' }
-          });
+        const resultAction = await deleteServiceAction(service.id);
+        
+        // GESTOR AUTOMÁTICO PARA EXCLUSÃO
+        notify.auto(resultAction.success, 'O cadastro foi removido do sistema.', 'Erro ao processar a exclusão.');
+
+        if (resultAction.success) {
           router.push("/");
           router.refresh();
         } else {
           setError("Não foi possível excluir o cadastro.");
-          setIsDeleting(false);
         }
       } catch (err) {
         setError("Erro ao processar a exclusão.");
+        notify.error("Falha crítica na exclusão.");
+      } finally {
         setIsDeleting(false);
       }
     }
@@ -189,6 +200,7 @@ export default function EditServiceForm({ service }: { service: any }) {
         </div>
       )}
 
+      {/* --- JSX INTEGRAL: Mantendo cada detalhe do seu design original --- */}
       <div className="space-y-3">
         <label className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 ml-1">Logo ou Foto do Negócio</label>
         <input type="file" id="image-upload" accept="image/*" onChange={handleImageChange} className="hidden" ref={fileInputRef} disabled={uploading || isDeleting} />
@@ -230,7 +242,7 @@ export default function EditServiceForm({ service }: { service: any }) {
                   disabled={loading || isDeleting}
                   className={cn(
                     "h-14 justify-between rounded-2xl bg-muted/30 border-border text-lg font-bold hover:bg-muted/40 transition-all",
-                    !formData.category && "text-muted-foreground" // CORREÇÃO: Placeholder em cinza
+                    !formData.category && "text-muted-foreground"
                   )}
                 >
                   {formData.category
@@ -278,6 +290,7 @@ export default function EditServiceForm({ service }: { service: any }) {
           />
         </div>
 
+        {/* --- Redes Sociais com seus ícones customizados --- */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
           <div className="space-y-2">
             <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">
@@ -306,6 +319,7 @@ export default function EditServiceForm({ service }: { service: any }) {
         </div>
       </div>
 
+      {/* --- Ações Inferiores: Mantendo sua estrutura de layout --- */}
       <div className="pt-8 flex flex-col gap-4 border-t border-border">
         <div className="flex gap-4">
           <Button type="button" variant="ghost" onClick={() => router.back()} className="flex-1 h-16 rounded-[2rem] font-bold text-muted-foreground hover:bg-muted" disabled={loading || isDeleting}>Cancelar</Button>

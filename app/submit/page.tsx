@@ -13,7 +13,6 @@ import {
   Globe, 
   MessageCircle, 
   Music2, 
-  X,
   Check,
   ChevronsUpDown
 } from "lucide-react";
@@ -33,20 +32,11 @@ import {
 import { cn } from "@/lib/utils";
 import Swal from 'sweetalert2';
 
-// Importação da lista padronizada de categorias
+// --- Importação da Logística de Estilo e Notificações Padronizada ---
+import { swalConfig } from "@/lib/swal";
+import { notify, Toast } from "@/lib/toast";
 import { SERVICE_CATEGORIES } from "@/src/constants/categories";
 
-const Toast = Swal.mixin({
-  toast: true,
-  position: 'top-end',
-  showConfirmButton: false,
-  timer: 3000,
-  timerProgressBar: true,
-});
-
-/**
- * Ícone do Instagram em SVG (Consistência com o EditForm)
- */
 const InstagramIcon = ({ className }: { className?: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
     <rect width="20" height="20" x="2" y="2" rx="5" ry="5" /><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" /><line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
@@ -73,7 +63,6 @@ export default function SubmitPage() {
   const [imagePreview, setImagePreview] = React.useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  // Máscara de Telefone
   const maskPhone = (value: string) => {
     return value
       .replace(/\D/g, "")
@@ -90,6 +79,7 @@ export default function SubmitPage() {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 2 * 1024 * 1024) {
+        // Uso do Toast Padronizado com brilho Neon
         Toast.fire({ icon: 'error', title: 'Arquivo muito grande', text: 'Limite de 2MB.' });
         return;
       }
@@ -125,12 +115,13 @@ export default function SubmitPage() {
     
     setIsSubmitting(true);
 
+    // 1. Modal de Sincronização Neon Centralizado
     Swal.fire({
+      ...swalConfig,
       title: 'Sincronizando...',
-      text: 'Enviando seu negócio para análise.',
+      text: 'Enviando seu negócio para análise da curadoria.',
       allowOutsideClick: false,
-      didOpen: () => { Swal.showLoading(); },
-      customClass: { popup: 'rounded-[2rem] bg-card text-foreground border border-border' }
+      didOpen: () => { Swal.showLoading(); }
     });
 
     try {
@@ -157,19 +148,15 @@ export default function SubmitPage() {
         }),
       });
 
+      // 2. GESTOR AUTOMÁTICO: Fecha Swal e dispara Toast Neon de Sucesso/Erro
+      notify.auto(res.ok, 'Sucesso! Cadastro enviado para curadoria.', 'Não foi possível completar o envio.');
+
       if (res.ok) {
-        Swal.close();
-        await Toast.fire({ icon: 'success', title: 'Sucesso!', text: 'Cadastro enviado para curadoria.' });
         router.push("/");
-      } else {
-        throw new Error();
       }
     } catch (err) {
-      Swal.fire({ 
-        icon: 'error', 
-        title: 'Erro no envio', 
-        customClass: { popup: 'rounded-[2rem] bg-card text-foreground border border-border' } 
-      });
+      // 3. Notificação de erro automática em caso de crash
+      notify.error("Ocorreu um erro inesperado no servidor.");
     } finally {
       setIsSubmitting(false); 
     }
@@ -188,6 +175,7 @@ export default function SubmitPage() {
           </header>
 
           <form onSubmit={submit} className="space-y-8">
+            {/* JSX de Formulário Integralmente Preservado */}
             <div className="space-y-3">
               <label className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 ml-1">Logo ou Foto do Negócio</label>
               <input type="file" id="image-upload" accept="image/*" onChange={handleImageChange} className="hidden" ref={fileInputRef} disabled={isSubmitting} />
@@ -228,7 +216,7 @@ export default function SubmitPage() {
                       disabled={isSubmitting}
                       className={cn(
                         "h-14 justify-between rounded-2xl bg-muted/30 border-border text-lg font-bold hover:bg-muted/40 transition-all",
-                        !form.category && "text-muted-foreground" // CORREÇÃO: Placeholder em cinza
+                        !form.category && "text-muted-foreground"
                       )}
                     >
                       {form.category

@@ -5,15 +5,25 @@ import TrashList from "./trash-list";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Loader2, ArrowLeft, Trash2 } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 export default function AdminTrashPage() {
   const [items, setItems] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [isAdmin, setIsAdmin] = React.useState(false);
   const router = useRouter();
 
-  // Função de carga com logística anti-cache e sincronização de tema
   async function loadTrashed() {
     try {
+      // 1. Verificação de Identidade e Role via API
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.email) {
+        const roleRes = await fetch(`/api/user/role?email=${session.user.email}`);
+        const { role } = await roleRes.json();
+        setIsAdmin(role === 'ADMIN');
+      }
+
+      // 2. Logística anti-cache para dados frescos
       const res = await fetch("/api/admin/trash", { 
         cache: 'no-store',
         headers: { 'Pragma': 'no-cache', 'Cache-Control': 'no-cache' }
@@ -62,14 +72,13 @@ export default function AdminTrashPage() {
             <p className="text-muted-foreground font-medium">Recupere cadastros ou elimine dados permanentemente.</p>
           </div>
           
-          {/* Badge Adaptativo: Sai bg-slate-900 (invisível no dark) e entra bg-primary */}
           <div className="bg-primary text-primary-foreground px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-primary/20">
             {items.length} Itens no Limbo
           </div>
         </div>
 
-        {/* O TrashList já foi corrigido anteriormente para usar bg-card e border-border */}
-        <TrashList items={items} onRefresh={loadTrashed} />
+        {/* Passamos isAdmin para o TrashList gerenciar visibilidade e permissão */}
+        <TrashList items={items} onRefresh={loadTrashed} isAdmin={isAdmin} />
       </main>
     </div>
   );

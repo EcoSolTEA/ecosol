@@ -6,61 +6,67 @@ import { Checkbox } from "@/components/ui/checkbox";
 import ServiceCard from "@/components/service-card";
 import { approveServicesBatchAction, removeServicesBatchAction } from "@/app/provider/actions";
 import { CheckCircle2, Trash2, Check, Loader2, Inbox } from "lucide-react";
+import { cn } from "@/lib/utils";
 import Swal from 'sweetalert2';
 
-const Toast = Swal.mixin({
-  toast: true,
-  position: 'top-end',
-  showConfirmButton: false,
-  timer: 3000,
-  timerProgressBar: true
-});
+// Importação da Central de Estilo e Notificações
+import { swalConfig } from "@/lib/swal";
+import { notify } from "@/lib/toast";
 
-export default function DashboardList({ initialItems, onRefresh }: { initialItems: any[], onRefresh: () => Promise<void> | void }) {
+interface DashboardListProps {
+  initialItems: any[];
+  onRefresh: () => Promise<void> | void;
+  isAdmin?: boolean; 
+}
+
+export default function DashboardList({ initialItems, onRefresh, isAdmin = false }: DashboardListProps) {
   const [selectedIds, setSelectedIds] = React.useState<number[]>([]);
   const [isProcessing, setIsProcessing] = React.useState(false);
 
   const toggleSelect = (id: number) => {
-    if (isProcessing) return;
+    if (isProcessing || !isAdmin) return;
     setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
   };
 
   const toggleSelectAll = () => {
-    if (isProcessing) return;
+    if (isProcessing || !isAdmin) return;
     setSelectedIds(selectedIds.length === initialItems.length ? [] : initialItems.map(p => p.id));
   };
 
-  // 🛠️ LOGÍSTICA CORRIGIDA: targetIds permite execução imediata ignorando o delay do estado
   const handleBatchAction = async (type: "approve" | "remove", targetIds?: number[]) => {
+    if (!isAdmin) return;
     const idsToProcess = targetIds || selectedIds;
     const isApprove = type === "approve";
     const count = idsToProcess.length;
 
     if (count === 0) return;
     
+    // 1. Confirmação Neon Padronizada
     const result = await Swal.fire({
+      ...swalConfig,
       title: isApprove ? 'Aprovar Cadastros?' : 'Recusar Itens?',
       text: `Deseja processar ${count} ${count > 1 ? 'solicitações' : 'solicitação'} agora?`,
       icon: 'question',
       showCancelButton: true,
-      confirmButtonColor: isApprove ? 'hsl(var(--primary))' : 'hsl(var(--destructive))',
-      cancelButtonColor: 'hsl(var(--muted))',
       confirmButtonText: isApprove ? 'Sim, Aprovar' : 'Sim, Recusar',
-      cancelButtonText: 'Cancelar',
+      // Ajuste dinâmico para botão destrutivo mantendo a simetria e sombra
       customClass: {
-        popup: 'rounded-[2.5rem] p-8 bg-card text-foreground border border-border',
-        confirmButton: 'rounded-xl font-black uppercase text-[10px] tracking-widest px-8 py-4',
-        cancelButton: 'rounded-xl font-bold px-8 py-4'
+        ...swalConfig.customClass,
+        confirmButton: isApprove 
+          ? swalConfig.customClass.confirmButton 
+          : swalConfig.customClass.confirmButton.replace('bg-primary', 'bg-destructive').replace('shadow-primary/30', 'shadow-destructive/30')
       }
     });
 
     if (result.isConfirmed) {
       setIsProcessing(true);
+      
+      // 2. Modal de Sincronização com Neon
       Swal.fire({
+        ...swalConfig,
         title: 'Sincronizando...',
         didOpen: () => { Swal.showLoading(); },
         allowOutsideClick: false,
-        customClass: { popup: 'rounded-[2.5rem] bg-card text-foreground border border-border' }
       });
 
       try {
@@ -68,30 +74,25 @@ export default function DashboardList({ initialItems, onRefresh }: { initialItem
           ? await approveServicesBatchAction(idsToProcess) 
           : await removeServicesBatchAction(idsToProcess);
         
+        // 3. GESTOR AUTOMÁTICO: Fecha o Swal e abre o Toast Neon
+        notify.auto(res.success, isApprove ? 'Aprovado com sucesso!' : 'Removido com sucesso!');
+        
         if (res.success) {
           await onRefresh(); 
-          setSelectedIds([]); // Limpa seleção após sucesso
-          Toast.fire({
-            icon: 'success',
-            title: isApprove ? 'Aprovado!' : 'Removido!',
-            background: 'hsl(var(--card))',
-            color: 'hsl(var(--foreground))'
-          });
-        } else { throw new Error(); }
+          setSelectedIds([]);
+        }
       } catch (error) {
-        Toast.fire({ icon: 'error', title: 'Erro na operação' });
+        notify.error("Erro na operação de lote");
       } finally {
         setIsProcessing(false);
-        Swal.close();
       }
     }
   };
 
   return (
-    <div className={`space-y-8 transition-all duration-500 ${isProcessing ? 'opacity-60 pointer-events-none' : 'opacity-100'}`}>
+    <div className={cn("space-y-8 transition-all duration-500", isProcessing && "opacity-60 pointer-events-none")}>
       
-      {/* BARRA DE SELEÇÃO SUPERIOR */}
-      {initialItems.length > 0 && (
+      {isAdmin && initialItems.length > 0 && (
         <div className="flex items-center justify-between px-8 py-5 bg-card border border-border rounded-[2rem] shadow-sm animate-in fade-in slide-in-from-top-4 duration-500">
           <div className="flex items-center gap-4">
             <Checkbox 
@@ -115,45 +116,49 @@ export default function DashboardList({ initialItems, onRefresh }: { initialItem
         </div>
       )}
 
-      {/* GRID DE CARDS */}
+      {/* GRID DE CARDS E DOCK... (Mantidos como estavam) */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {initialItems.map((p) => (
           <div key={p.id} onClick={() => toggleSelect(p.id)} className="group relative">
             <Card 
-              className={`relative transition-all duration-500 rounded-[2.5rem] p-6 border-2 cursor-pointer h-full flex flex-col ${
+              className={cn(
+                "relative transition-all duration-500 rounded-[2.5rem] p-6 border-2 h-full flex flex-col",
+                isAdmin && "cursor-pointer",
                 selectedIds.includes(p.id) 
                   ? 'border-primary bg-primary/5 shadow-2xl scale-[0.98]' 
                   : 'border-transparent bg-card shadow-sm hover:border-border hover:shadow-xl'
-              }`}
+              )}
             >
               <div className="space-y-4 flex-1 flex flex-col">
                 <ServiceCard service={p} />
                 
-                <div className="flex gap-2 mt-auto pt-4 border-t border-border">
-                  <Button 
-                    disabled={isProcessing}
-                    onClick={(e) => { 
-                      e.stopPropagation(); 
-                      handleBatchAction("approve", [p.id]); // Injeta ID direto no array
-                    }}
-                    variant="ghost"
-                    className="flex-1 h-10 text-[10px] uppercase tracking-widest text-primary hover:bg-primary/10 hover:text-primary font-black gap-2 rounded-2xl transition-all"
-                  >
-                    <CheckCircle2 className="h-4 w-4" /> Aprovar
-                  </Button>
-                  
-                  <Button 
-                    disabled={isProcessing}
-                    onClick={(e) => { 
-                      e.stopPropagation(); 
-                      handleBatchAction("remove", [p.id]); // Injeta ID direto no array
-                    }}
-                    variant="ghost"
-                    className="h-10 px-4 rounded-2xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
+                {isAdmin && (
+                  <div className="flex gap-2 mt-auto pt-4 border-t border-border">
+                    <Button 
+                      disabled={isProcessing}
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        handleBatchAction("approve", [p.id]); 
+                      }}
+                      variant="ghost"
+                      className="flex-1 h-10 text-[10px] uppercase tracking-widest text-primary hover:bg-primary/10 font-black gap-2 rounded-2xl transition-all"
+                    >
+                      <CheckCircle2 className="h-4 w-4" /> Aprovar
+                    </Button>
+                    
+                    <Button 
+                      disabled={isProcessing}
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        handleBatchAction("remove", [p.id]); 
+                      }}
+                      variant="ghost"
+                      className="h-10 px-4 rounded-2xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
               </div>
 
               {selectedIds.includes(p.id) && (
@@ -166,23 +171,22 @@ export default function DashboardList({ initialItems, onRefresh }: { initialItem
         ))}
       </div>
 
-      {/* EMPTY STATE */}
       {initialItems.length === 0 && (
-        <div className="py-32 text-center bg-card rounded-[3rem] border-2 border-dashed border-border transition-colors">
+        <div className="py-32 text-center bg-card rounded-[3rem] border-2 border-dashed border-border">
           <Inbox className="w-16 h-16 text-muted-foreground/20 mx-auto mb-4" />
           <h3 className="text-xl font-black text-foreground uppercase tracking-tight leading-none">Tudo em ordem</h3>
           <p className="text-muted-foreground text-[10px] font-black uppercase tracking-[0.3em] mt-2">Nenhum cadastro pendente</p>
         </div>
       )}
 
-      {/* DOCK DE AÇÕES EM LOTE */}
-      {selectedIds.length > 0 && (
+      {/* DOCK DE AÇÕES... */}
+      {isAdmin && selectedIds.length > 0 && (
         <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 flex items-center gap-8 bg-background border-2 border-primary px-8 py-5 rounded-[2.5rem] shadow-[0_20px_40px_rgba(0,0,0,0.3)] animate-in fade-in slide-in-from-bottom-10 duration-500">
           <div className="flex items-center gap-4 pr-8 border-r border-border">
             <div className="h-12 w-12 bg-primary text-primary-foreground rounded-2xl flex items-center justify-center font-black text-lg rotate-3 shadow-lg shadow-primary/20">
               {isProcessing ? <Loader2 className="h-6 w-6 animate-spin" /> : selectedIds.length}
             </div>
-            <div>
+            <div className="hidden sm:block">
               <p className="text-[10px] font-black text-foreground uppercase tracking-[0.2em] leading-none mb-1">Lote</p>
               <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none">
                 {isProcessing ? "Sincronizando" : "Selecionados"}
@@ -193,14 +197,14 @@ export default function DashboardList({ initialItems, onRefresh }: { initialItem
           <div className="flex gap-4">
             <Button 
               disabled={isProcessing}
-              onClick={() => handleBatchAction("approve")} // Usa o estado global selectedIds
+              onClick={() => handleBatchAction("approve")} 
               className="bg-primary hover:bg-primary/90 text-primary-foreground font-black rounded-2xl flex gap-3 h-12 px-8 text-xs uppercase tracking-widest shadow-lg shadow-primary/20 transition-all active:scale-95"
             >
               <CheckCircle2 className="h-4 w-4" /> Aprovar
             </Button>
             <Button 
               disabled={isProcessing}
-              onClick={() => handleBatchAction("remove")} // Usa o estado global selectedIds
+              onClick={() => handleBatchAction("remove")} 
               variant="ghost"
               className="text-destructive hover:bg-destructive/10 hover:text-destructive font-black rounded-2xl flex gap-3 h-12 px-6 text-xs uppercase tracking-widest transition-all active:scale-95"
             >
