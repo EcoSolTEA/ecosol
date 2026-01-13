@@ -1,92 +1,125 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
-
-## 🌿 Ecosol - Plataforma de Economia Solidária
+# 🌿 Ecosol - Plataforma de Economia Solidária
 
 Plataforma voltada para a gestão e fomento da economia solidária, desenvolvida com **Next.js 15**, **Prisma 7.2** e **Supabase**.
 
-## Getting Started
+## 🚀 Começando
 
-First, run the development server:
+### Pré-requisitos
+- Node.js 18+ e npm/yarn/pnpm/bun
+- Conta no Supabase
+- Git
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+### Instalação
+1. Clone o repositório: `git clone https://github.com/seu-usuario/ecosol.git`
+2. Acesse a pasta: `cd ecosol`
+3. Instale as dependências: `npm install`
+4. Configure as variáveis de ambiente: `cp .env.example .env.local`
+5. Preencha o arquivo `.env.local` com suas credenciais
 
-Open http://localhost:3000 with your browser to see the result.
+## ⚙️ Configuração do Ambiente
+**Variáveis de Ambiente (.env.local):**
 
-You can start editing the page by modifying app/page.tsx. The page auto-updates as you edit the file.
-
-This project uses next/font to automatically optimize and load Geist, a new font family for Vercel.
-🛠 Configuração do Backend (Prisma 7 + Supabase)
-
-No Prisma 7.2, as URLs de conexão não são mais suportadas no arquivo schema.prisma. Elas devem ser gerenciadas exclusivamente pelo arquivo prisma.config.ts.
-1. Variáveis de Ambiente (.env)
-
-Certifique-se de que sua senha do banco de dados tenha caracteres especiais codificados. Importante: O asterisco * deve ser escrito como %2A. Recomenda-se o uso do host IPv4 do Supabase para evitar travamentos de conexão no Linux.
-Snippet de código
-
-# URL para a aplicação (Porta 6543 - Transaction Mode com PgBouncer)
 DATABASE_URL="postgresql://postgres.[ID]:[SENHA]@[HOST]:6543/postgres?pgbouncer=true"
-
-# URL para Migrações e CLI (Porta 5432 - Session Mode Direto)
 DIRECT_URL="postgresql://postgres.[ID]:[SENHA]@[HOST]:5432/postgres"
-
-# Supabase Keys
 NEXT_PUBLIC_SUPABASE_URL="https://[ID].supabase.co"
 NEXT_PUBLIC_SUPABASE_ANON_KEY="sua_chave_anon_aqui"
+SUPABASE_SERVICE_ROLE_KEY="sua_chave_de_servico_aqui"
+text
 
-2. Configuração do Prisma CLI (prisma.config.ts)
+**Importante:** Codifique caracteres especiais na senha (ex: * → %2A)
 
-Para que as migrações funcionem via terminal, o arquivo de configuração deve apontar para a DIRECT_URL. O Prisma 7 utiliza este arquivo para estabelecer a conexão durante o comando migrate.
-TypeScript
+**Configuração do Prisma 7.2:**
+Crie o arquivo `prisma.config.ts` na raiz:
 
 import { defineConfig } from '@prisma/config';
 import * as dotenv from 'dotenv';
-
 dotenv.config();
-
 export default defineConfig({
-  datasource: {
-    // O CLI utiliza esta URL para migrações (deve ser a DIRECT_URL porta 5432)
-    url: process.env.DIRECT_URL as string,
-  },
+datasource: {
+url: process.env.DIRECT_URL as string,
+},
 });
+text
 
-3. Sincronização de Banco de Dados
-Bash
 
-# Gerar o Prisma Client
+**Configuração do Banco de Dados:**
+
 npx prisma generate
-
-# Executar migrações iniciais (utiliza a url definida no config)
 npx prisma migrate dev --name init
+npx prisma studio
+text
 
-🔐 Autenticação e Storage (Supabase Dashboard)
 
-Configurações necessárias no painel do Supabase para o funcionamento correto da plataforma:
+## 🔐 Configuração do Supabase
+1. **Authentication:** No Dashboard do Supabase, vá em Authentication > URL Configuration e adicione:
+   - `http://localhost:3000/**`
+   - `https://seu-dominio.com/**` (para produção)
+2. **Storage:** Crie um bucket público chamado `logos` e configure as permissões.
 
-    Redirect URLs: Adicione http://localhost:3000/** em Authentication > URL Configuration.
+## 🏃 Executando o Projeto
+**Ambiente de Desenvolvimento:** `npm run dev` e acesse http://localhost:3000
+**Build para Produção:** `npm run build` e depois `npm start`
 
-    Rota de Consentimento: Implementada em app/oauth/consent/page.tsx para gerenciar autorizações de login.
+## 📁 Estrutura do Projeto
 
-    Storage: Criar bucket público chamado logos.
+ecosol/
+├── app/ # Diretório principal da aplicação Next.js
+│ ├── api/ # Rotas da API
+│ ├── auth/ # Páginas de autenticação
+│ ├── oauth/ # Fluxo OAuth (inclui consent)
+│ └── page.tsx # Página inicial
+├── components/ # Componentes React reutilizáveis
+├── lib/ # Utilities e configurações
+│ ├── prisma.ts # Cliente Prisma
+│ └── supabase.ts # Cliente Supabase
+├── prisma/ # Schema do Prisma
+│ └── schema.prisma # Definição do modelo de dados
+├── public/ # Arquivos estáticos
+└── styles/ # Estilos globais
+text
 
-Learn More
 
-To learn more about Next.js, take a look at the following resources:
+## 🛠 Tecnologias Utilizadas
+- **Next.js 15** - Framework React com App Router
+- **TypeScript** - Tipagem estática
+- **Prisma 7.2** - ORM para banco de dados
+- **Supabase** - Backend como serviço
+- **Tailwind CSS** - Estilização
+- **React Hook Form** - Manipulação de formulários
+- **Zod** - Validação de schemas
 
-    Next.js Documentation - learn about Next.js features and API.
+## 🔧 Scripts Disponíveis
+- `npm run dev` - Inicia servidor de desenvolvimento
+- `npm run build` - Cria build de produção
+- `npm start` - Inicia servidor de produção
+- `npm run lint` - Executa linter
+- `npx prisma generate` - Gera cliente Prisma
+- `npx prisma migrate dev` - Executa migrações
+- `npx prisma studio` - Abre interface do Prisma
 
-    Learn Next.js - an interactive Next.js tutorial.
+## 🤝 Contribuindo
+1. Faça um fork do projeto
+2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
+3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
+4. Push para a branch (`git push origin feature/AmazingFeature`)
+5. Abra um Pull Request
 
-You can check out the Next.js GitHub repository - your feedback and contributions are welcome!
-Deploy on Vercel
+## 📄 Licença
+Este projeto está sob licença MIT.
 
-The easiest way to deploy your Next.js app is to use the Vercel Platform from the creators of Next.js.
+## 📚 Links Úteis
+- [Documentação Next.js](https://nextjs.org/docs)
+- [Tutorial Next.js](https://nextjs.org/learn)
+- [Prisma Documentation](https://www.prisma.io/docs)
+- [Supabase Docs](https://supabase.com/docs)
 
-Check out our Next.js deployment documentation for more details.
+## 🚀 Deploy na Vercel
+1. Conecte seu repositório GitHub à Vercel
+2. Configure as variáveis de ambiente na dashboard da Vercel
+3. O deploy será automático a cada push
+
+**Nota:** Este projeto utiliza `next/font` para otimizar e carregar automaticamente a fonte Geist.
+
+---
+
+Desenvolvido com ❤️ para a economia solidária.
