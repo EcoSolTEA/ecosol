@@ -1,4 +1,3 @@
-// middleware.ts
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
@@ -12,11 +11,9 @@ export async function middleware(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
+        getAll() { return request.cookies.getAll() },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           response = NextResponse.next({ request })
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options)
@@ -26,19 +23,21 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // 1. Tenta recuperar o usuário
+  // 1. Recupera a sessão do usuário (Carga de Autenticação)
   const { data: { user } } = await supabase.auth.getUser()
 
-  // 2. Lógica de Redirecionamento (Zelo de Engenharia)
-  const isProfilePage = request.nextUrl.pathname.startsWith('/profile')
-  const isLoginPage = request.nextUrl.pathname === '/login'
+  const { pathname } = request.nextUrl
+  const isProtectedPage = pathname.startsWith('/profile') || pathname.startsWith('/admin')
+  const isLoginPage = pathname === '/login'
 
-  // Se não houver usuário e tentar acessar perfil -> Login
-  if (!user && isProfilePage) {
+  // 2. LOGÍSTICA DE REDIRECIONAMENTO SEGURA
+
+  // Se NÃO houver usuário e tentar acessar Perfil ou Admin -> Manda para o Login
+  if (!user && isProtectedPage) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // Se houver usuário e tentar acessar login -> Perfil
+  // Se HOUVER usuário e tentar acessar o Login -> Manda para o Perfil
   if (user && isLoginPage) {
     return NextResponse.redirect(new URL('/profile', request.url))
   }
