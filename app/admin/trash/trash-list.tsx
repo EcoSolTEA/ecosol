@@ -188,7 +188,7 @@ export default function TrashList({ items, onRefresh, isAdmin = false }: TrashLi
               {isProcessing ? <Loader2 className="h-6 w-6 animate-spin" /> : selected.length}
             </div>
             <div className="hidden sm:block">
-              <p className="text-[10px] font-black text-foreground uppercase tracking-[0.2em] leading-none mb-1">Lote Limbo</p>
+              <p className="text-[10px] font-black text-foreground uppercase tracking-[0.2em] leading-none mb-1">Ação em Lote</p>
               <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none">
                 {isProcessing ? "Limpando" : "Selecionados"}
               </p>

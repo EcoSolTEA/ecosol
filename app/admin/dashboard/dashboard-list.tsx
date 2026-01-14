@@ -174,8 +174,8 @@ export default function DashboardList({ initialItems, onRefresh, isAdmin = false
             <div className="h-10 w-10 md:h-12 md:w-12 bg-primary text-primary-foreground rounded-xl flex items-center justify-center font-black text-sm md:text-lg shadow-lg shadow-primary/20">
               {isProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : selectedIds.length}
             </div>
-            <div className="hidden xs:block">
-              <p className="text-[10px] font-black text-foreground uppercase tracking-[0.2em] leading-none mb-1">Lote</p>
+            <div className="hidden sm:block">
+              <p className="text-[10px] font-black text-foreground uppercase tracking-[0.2em] leading-none mb-1">Ação em Lote</p>
               <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none">
                 {isProcessing ? "Sinc..." : "Selecionados"}
               </p>
