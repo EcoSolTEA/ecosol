@@ -144,11 +144,15 @@ export const confirmAction = (
 };
 
 /**
- * 6. MODAL DE LOADING
+ * 6. MODAL DE LOADING - AGORA ACEITA TEXTO
  */
-export const showLoading = (title: string = 'Processando...'): Promise<SweetAlertResult> => {
+export const showLoading = (
+  title: string = 'Processando...',
+  text?: string
+): Promise<SweetAlertResult> => {
   return Swal.fire({
     title,
+    text,
     didOpen: () => {
       Swal.showLoading();
     },
@@ -160,12 +164,13 @@ export const showLoading = (title: string = 'Processando...'): Promise<SweetAler
     customClass: {
       popup: `${POPUP_BASE} !border-primary/40 ${SHADOWS.NEON_BLUE}`,
       title: '!text-2xl !font-black !uppercase !tracking-tight',
+      htmlContainer: text ? '!text-sm !text-muted-foreground !font-medium !mt-4' : '',
     }
   });
 };
 
 /**
- * 7. TOAST - USANDO A VERSÃO QUE FUNCIONAVA
+ * 7. TOAST
  */
 export const Toast = Swal.mixin({
   toast: true,

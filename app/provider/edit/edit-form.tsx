@@ -144,7 +144,7 @@ export default function EditServiceForm({ service }: { service: Service }) {
     setError("");
 
     // 1. Modal de Sincronização Neon Centralizado
-    const loadingSwal = showLoading("Sincronizando...");
+    const loadingSwal = showLoading("Sincronizando...", "Salvando as novas informações do negócio.");
 
     try {
       const normalizedData = {
@@ -189,7 +189,7 @@ export default function EditServiceForm({ service }: { service: Service }) {
       setIsDeleting(true);
       setError("");
 
-      const loadingSwal = showLoading("Excluindo...");
+            const loadingSwal = showLoading("Excluindo...", "Removendo cadastro do sistema...");
 
       try {
         const resultAction = await deleteServiceAction(Number(service.id));

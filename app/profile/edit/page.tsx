@@ -53,7 +53,7 @@ export default function EditProfile() {
     setSaving(true);
 
     // 1. Modal de Sincronização Neon (Padronizado via lib/swal)
-    const loadingSwal = showLoading('Sincronizando...');
+        const loadingSwal = showLoading('Sincronizando...', 'Atualizando seus dados na rede Ecosol.');
 
     try {
       const res = await fetch("/api/user/profile", {

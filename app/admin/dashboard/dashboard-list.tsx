@@ -54,7 +54,8 @@ export default function DashboardList({ initialItems, onRefresh, isAdmin = false
       setIsProcessing(true);
       
       // 2. Modal de Sincronização usando a nova função
-      showLoading('Sincronizando...');
+            // 2. Modal de Sincronização usando a nova função
+      const loadingSwal = showLoading('Sincronizando...', `Processando ${count} ${count > 1 ? 'solicitações' : 'solicitação'}...`);
 
       try {
         const res = isApprove 

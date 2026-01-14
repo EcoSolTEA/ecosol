@@ -56,7 +56,7 @@ export default function TrashList({ items, onRefresh, isAdmin = false }: TrashLi
       setIsProcessing(true);
       
       // 2. Modal de Sincronização usando a nova função
-      showLoading('Sincronizando...');
+      const loadingSwal = showLoading('Sincronizando...', `Processando ${count} ${count > 1 ? 'itens' : 'item'}...`);
 
       try {
         const res = isRestore 
