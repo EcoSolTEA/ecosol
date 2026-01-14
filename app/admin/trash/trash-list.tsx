@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import ServiceCard from "@/components/service-card";
+import Dock from "@/components/ui/dock"; // Componente Dock importado
 import { restoreServicesBatchAction, deleteServicesBatchAction } from "@/app/provider/actions";
 import { Trash2, RotateCcw, AlertCircle, Loader2, Check, Inbox } from "lucide-react";
 import Swal from 'sweetalert2';
@@ -41,6 +42,7 @@ export default function TrashList({ items, onRefresh, isAdmin = false }: TrashLi
 
     if (count === 0) return;
 
+    // 1. Confirmação Neon Simétrica
     const result = await Swal.fire({
       ...swalConfig,
       title: isRestore ? 'Restaurar Cadastros?' : 'Eliminar Permanente?',
@@ -50,6 +52,7 @@ export default function TrashList({ items, onRefresh, isAdmin = false }: TrashLi
       icon: isRestore ? 'question' : 'warning',
       showCancelButton: true,
       confirmButtonText: isRestore ? 'Sim, Restaurar' : 'Sim, Apagar Tudo',
+      // Ajuste dinâmico do botão para ações destrutivas mantendo simetria e sombra
       customClass: {
         ...swalConfig.customClass,
         confirmButton: isRestore 
@@ -61,6 +64,7 @@ export default function TrashList({ items, onRefresh, isAdmin = false }: TrashLi
     if (result.isConfirmed) {
       setIsProcessing(true);
       
+      // 2. Modal de Sincronização com Neon
       Swal.fire({
         ...swalConfig,
         title: 'Sincronizando...',
@@ -73,6 +77,7 @@ export default function TrashList({ items, onRefresh, isAdmin = false }: TrashLi
           ? await restoreServicesBatchAction(idsToProcess) 
           : await deleteServicesBatchAction(idsToProcess);
         
+        // 3. GESTOR AUTOMÁTICO: Fecha o Swal e abre o Toast Neon
         notify.auto(
           res.success, 
           isRestore ? 'Restaurado com sucesso!' : 'Eliminado permanentemente!',
@@ -81,7 +86,7 @@ export default function TrashList({ items, onRefresh, isAdmin = false }: TrashLi
         
         if (res.success) {
           await onRefresh();
-          setSelected([]);
+          setSelected([]); // Limpa a seleção após sucesso
         }
       } catch (error) {
         notify.error("Erro crítico ao processar lixeira.");
@@ -92,10 +97,11 @@ export default function TrashList({ items, onRefresh, isAdmin = false }: TrashLi
   };
 
   return (
-    <div className={cn("space-y-8 transition-all duration-500 pb-20", isProcessing && "opacity-60 pointer-events-none")}>
+    <div className={cn("space-y-8 transition-all duration-500 pb-32", isProcessing && "opacity-60 pointer-events-none")}>
       
+      {/* BARRA DE SELEÇÃO SUPERIOR */}
       {isAdmin && items.length > 0 && (
-        <div className="flex items-center justify-between px-8 py-5 bg-card border border-border rounded-[2rem] shadow-sm animate-in fade-in slide-in-from-top-4 duration-500">
+        <div className="flex items-center justify-between px-8 py-5 bg-card border border-border rounded-2xl shadow-sm animate-in fade-in slide-in-from-top-4 duration-500">
           <div className="flex items-center gap-4">
             <Checkbox 
               checked={selected.length === items.length && items.length > 0} 
@@ -118,11 +124,12 @@ export default function TrashList({ items, onRefresh, isAdmin = false }: TrashLi
         </div>
       )}
 
+      {/* GRID DE CARDS */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {items.map((item) => (
           <div key={item.id} onClick={() => toggleSelect(item.id)} className="group relative">
             <Card className={cn(
-              "relative transition-all duration-500 rounded-[2.5rem] p-6 border-2 h-full flex flex-col",
+              "relative transition-all duration-500 rounded-2xl p-6 border-2 h-full flex flex-col",
               isAdmin && "cursor-pointer",
               selected.includes(item.id) 
                 ? 'border-primary bg-primary/5 shadow-2xl scale-[0.98]' 
@@ -176,8 +183,9 @@ export default function TrashList({ items, onRefresh, isAdmin = false }: TrashLi
         ))}
       </div>
 
+      {/* EMPTY STATE */}
       {items.length === 0 && (
-        <div className="py-32 text-center bg-card rounded-[3rem] border-2 border-dashed border-border transition-all">
+        <div className="py-32 text-center bg-card rounded-2xl border-2 border-dashed border-border transition-all">
           <div className="w-20 h-20 bg-muted/50 rounded-full flex items-center justify-center mx-auto mb-6 opacity-30">
             <Inbox size={40} />
           </div>
@@ -186,39 +194,40 @@ export default function TrashList({ items, onRefresh, isAdmin = false }: TrashLi
         </div>
       )}
 
-      {/* DOCK RESPONSIVO - APENAS CLASSES DE TELA ADICIONADAS */}
+      {/* DOCK DE AÇÕES EM LOTE - COMPLEXO E COMPLETO */}
       {isAdmin && selected.length > 0 && (
-        <div className="fixed bottom-6 sm:bottom-10 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 sm:gap-8 bg-background border-2 border-primary px-4 sm:px-8 py-3 sm:py-5 rounded-[1.5rem] sm:rounded-[2.5rem] shadow-[0_20px_40px_rgba(0,0,0,0.3)] animate-in fade-in slide-in-from-bottom-10 duration-500 w-[92%] sm:w-auto">
-          <div className="flex items-center gap-3 sm:gap-4 pr-4 sm:pr-8 border-r border-border">
-            <div className="h-10 w-10 sm:h-12 sm:w-12 bg-primary text-primary-foreground rounded-xl sm:rounded-2xl flex items-center justify-center font-black text-base sm:text-lg rotate-2 shadow-lg shadow-primary/20">
-              {isProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : selected.length}
+        <Dock>
+          <div className="flex items-center gap-4 pr-4 md:pr-8 border-r border-border flex-shrink-0">
+            {/* REMOVIDO ROTATE-2 CONFORME PEDIDO */}
+            <div className="h-10 w-10 md:h-12 md:w-12 bg-primary text-primary-foreground rounded-xl flex items-center justify-center font-black text-sm md:text-lg shadow-lg shadow-primary/20">
+              {isProcessing ? <Loader2 className="h-6 w-6 animate-spin" /> : selected.length}
             </div>
-            <div className="hidden xs:block sm:block">
-              <p className="text-[10px] font-black text-foreground uppercase tracking-[0.2em] leading-none mb-1">Lote</p>
+            <div className="hidden sm:block">
+              <p className="text-[10px] font-black text-foreground uppercase tracking-[0.2em] leading-none mb-1">Lote Limbo</p>
               <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none">
-                {isProcessing ? "Lim..." : "Selecionados"}
+                {isProcessing ? "Limpando" : "Selecionados"}
               </p>
             </div>
           </div>
           
-          <div className="flex flex-1 sm:flex-none gap-2 sm:gap-4">
+          <div className="flex gap-2 md:gap-4 ml-2 md:ml-4 flex-1 md:flex-none">
             <Button 
               disabled={isProcessing}
               onClick={() => handleAction("restore")} 
-              className="flex-1 sm:flex-none bg-primary hover:bg-primary/90 text-primary-foreground font-black rounded-xl sm:rounded-2xl flex gap-2 sm:gap-3 h-10 sm:h-12 px-4 sm:px-8 text-[10px] sm:text-xs uppercase tracking-widest shadow-lg active:scale-95 transition-all"
+              className="flex-1 md:flex-none bg-primary hover:bg-primary/90 text-primary-foreground font-black rounded-xl flex gap-3 h-10 md:h-12 px-3 md:px-8 text-[10px] md:text-xs uppercase tracking-[0.2em] shadow-lg active:scale-95 transition-all whitespace-nowrap"
             >
-              <RotateCcw className="h-4 w-4" /> <span className="hidden sm:inline">Restaurar</span>
+              <RotateCcw className="h-4 w-4" /> Restaurar
             </Button>
             <Button 
               disabled={isProcessing}
               onClick={() => handleAction("delete")} 
               variant="ghost"
-              className="flex-1 sm:flex-none text-destructive hover:bg-destructive/10 hover:text-destructive font-black rounded-xl sm:rounded-2xl flex gap-2 sm:gap-3 h-10 sm:h-12 px-4 sm:px-6 text-[10px] sm:text-xs uppercase tracking-widest active:scale-95 transition-all"
+              className="flex-1 md:flex-none text-destructive hover:bg-destructive/10 hover:text-destructive font-black rounded-xl flex gap-3 h-10 md:h-12 px-2 md:px-6 text-[10px] md:text-xs uppercase tracking-[0.2em] active:scale-95 transition-all whitespace-nowrap"
             >
-              <Trash2 className="h-4 w-4" /> <span className="hidden sm:inline">Apagar</span>
+              <Trash2 className="h-4 w-4" /> Apagar
             </Button>
           </div>
-        </div>
+        </Dock>
       )}
     </div>
   );

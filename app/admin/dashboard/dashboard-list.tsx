@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import ServiceCard from "@/components/service-card";
+import Dock from "@/components/ui/dock"; // Componente Dock importado
 import { approveServicesBatchAction, removeServicesBatchAction } from "@/app/provider/actions";
 import { CheckCircle2, Trash2, Check, Loader2, Inbox } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -41,6 +42,7 @@ export default function DashboardList({ initialItems, onRefresh, isAdmin = false
 
     if (count === 0) return;
     
+    // 1. Confirmação Neon Padronizada
     const result = await Swal.fire({
       ...swalConfig,
       title: isApprove ? 'Aprovar Cadastros?' : 'Recusar Itens?',
@@ -48,6 +50,7 @@ export default function DashboardList({ initialItems, onRefresh, isAdmin = false
       icon: 'question',
       showCancelButton: true,
       confirmButtonText: isApprove ? 'Sim, Aprovar' : 'Sim, Recusar',
+      // Ajuste dinâmico para botão destrutivo mantendo a simetria e sombra
       customClass: {
         ...swalConfig.customClass,
         confirmButton: isApprove 
@@ -59,6 +62,7 @@ export default function DashboardList({ initialItems, onRefresh, isAdmin = false
     if (result.isConfirmed) {
       setIsProcessing(true);
       
+      // 2. Modal de Sincronização com Neon
       Swal.fire({
         ...swalConfig,
         title: 'Sincronizando...',
@@ -71,6 +75,7 @@ export default function DashboardList({ initialItems, onRefresh, isAdmin = false
           ? await approveServicesBatchAction(idsToProcess) 
           : await removeServicesBatchAction(idsToProcess);
         
+        // 3. GESTOR AUTOMÁTICO: Fecha o Swal e abre o Toast Neon
         notify.auto(res.success, isApprove ? 'Aprovado com sucesso!' : 'Removido com sucesso!');
         
         if (res.success) {
@@ -86,10 +91,11 @@ export default function DashboardList({ initialItems, onRefresh, isAdmin = false
   };
 
   return (
-    <div className={cn("space-y-8 transition-all duration-500 pb-20", isProcessing && "opacity-60 pointer-events-none")}>
+    /* pb-32 adicionado para o dock não cobrir os últimos cards */
+    <div className={cn("space-y-8 transition-all duration-500 pb-32", isProcessing && "opacity-60 pointer-events-none")}>
       
       {isAdmin && initialItems.length > 0 && (
-        <div className="flex items-center justify-between px-8 py-5 bg-card border border-border rounded-[2rem] shadow-sm animate-in fade-in slide-in-from-top-4 duration-500">
+        <div className="flex items-center justify-between px-8 py-5 bg-card border border-border rounded-2xl shadow-sm animate-in fade-in slide-in-from-top-4 duration-500">
           <div className="flex items-center gap-4">
             <Checkbox 
               checked={selectedIds.length === initialItems.length && initialItems.length > 0}
@@ -112,12 +118,13 @@ export default function DashboardList({ initialItems, onRefresh, isAdmin = false
         </div>
       )}
 
+      {/* GRID DE CARDS */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {initialItems.map((p) => (
           <div key={p.id} onClick={() => toggleSelect(p.id)} className="group relative">
             <Card 
               className={cn(
-                "relative transition-all duration-500 rounded-[2.5rem] p-6 border-2 h-full flex flex-col",
+                "relative transition-all duration-500 rounded-2xl p-6 border-2 h-full flex flex-col",
                 isAdmin && "cursor-pointer",
                 selectedIds.includes(p.id) 
                   ? 'border-primary bg-primary/5 shadow-2xl scale-[0.98]' 
@@ -136,7 +143,7 @@ export default function DashboardList({ initialItems, onRefresh, isAdmin = false
                         handleBatchAction("approve", [p.id]); 
                       }}
                       variant="ghost"
-                      className="flex-1 h-10 text-[10px] uppercase tracking-widest text-primary hover:bg-primary/10 font-black gap-2 rounded-2xl transition-all"
+                      className="flex-1 h-10 text-[10px] uppercase tracking-widest text-primary hover:bg-primary/10 font-black gap-2 rounded-xl transition-all"
                     >
                       <CheckCircle2 className="h-4 w-4" /> Aprovar
                     </Button>
@@ -148,7 +155,7 @@ export default function DashboardList({ initialItems, onRefresh, isAdmin = false
                         handleBatchAction("remove", [p.id]); 
                       }}
                       variant="ghost"
-                      className="h-10 px-4 rounded-2xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
+                      className="h-10 px-4 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -167,21 +174,22 @@ export default function DashboardList({ initialItems, onRefresh, isAdmin = false
       </div>
 
       {initialItems.length === 0 && (
-        <div className="py-32 text-center bg-card rounded-[3rem] border-2 border-dashed border-border">
+        <div className="py-32 text-center bg-card rounded-2xl border-2 border-dashed border-border">
           <Inbox className="w-16 h-16 text-muted-foreground/20 mx-auto mb-4" />
           <h3 className="text-xl font-black text-foreground uppercase tracking-tight leading-none">Tudo em ordem</h3>
           <p className="text-muted-foreground text-[10px] font-black uppercase tracking-[0.3em] mt-2">Nenhum cadastro pendente</p>
         </div>
       )}
 
-      {/* DOCK RESPONSIVO - APENAS CLASSES DE TELA ADICIONADAS */}
+      {/* DOCK DE AÇÕES - COMPLEXO E COMPLETO */}
       {isAdmin && selectedIds.length > 0 && (
-        <div className="fixed bottom-6 sm:bottom-10 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 sm:gap-8 bg-background border-2 border-primary px-4 sm:px-8 py-3 sm:py-5 rounded-[1.5rem] sm:rounded-[2.5rem] shadow-[0_20px_40px_rgba(0,0,0,0.3)] animate-in fade-in slide-in-from-bottom-10 duration-500 w-[92%] sm:w-auto">
-          <div className="flex items-center gap-3 sm:gap-4 pr-4 sm:pr-8 border-r border-border">
-            <div className="h-10 w-10 sm:h-12 sm:w-12 bg-primary text-primary-foreground rounded-xl sm:rounded-2xl flex items-center justify-center font-black text-base sm:text-lg rotate-3 shadow-lg shadow-primary/20">
+        <Dock>
+          <div className="flex items-center gap-3 md:gap-4 pr-3 md:pr-8 border-r border-border flex-shrink-0">
+            {/* REMOVIDO ROTATE-2 CONFORME PEDIDO */}
+            <div className="h-10 w-10 md:h-12 md:w-12 bg-primary text-primary-foreground rounded-xl flex items-center justify-center font-black text-sm md:text-lg shadow-lg shadow-primary/20">
               {isProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : selectedIds.length}
             </div>
-            <div className="hidden xs:block sm:block">
+            <div className="hidden xs:block">
               <p className="text-[10px] font-black text-foreground uppercase tracking-[0.2em] leading-none mb-1">Lote</p>
               <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none">
                 {isProcessing ? "Sinc..." : "Selecionados"}
@@ -189,24 +197,26 @@ export default function DashboardList({ initialItems, onRefresh, isAdmin = false
             </div>
           </div>
           
-          <div className="flex flex-1 sm:flex-none gap-2 sm:gap-4">
+          <div className="flex flex-nowrap gap-2 md:gap-4 flex-1 md:flex-none ml-2 md:ml-4">
             <Button 
               disabled={isProcessing}
               onClick={() => handleBatchAction("approve")} 
-              className="flex-1 sm:flex-none bg-primary hover:bg-primary/90 text-primary-foreground font-black rounded-xl sm:rounded-2xl flex gap-2 sm:gap-3 h-10 sm:h-12 px-4 sm:px-8 text-[10px] sm:text-xs uppercase tracking-widest shadow-lg shadow-primary/20 transition-all active:scale-95"
+              className="flex-1 md:flex-none bg-primary hover:bg-primary/90 text-primary-foreground font-black rounded-xl flex items-center justify-center gap-2 h-10 md:h-12 px-3 md:px-8 text-[10px] md:text-xs uppercase tracking-[0.2em] shadow-lg shadow-primary/20 transition-all active:scale-95 whitespace-nowrap"
             >
-              <CheckCircle2 className="h-4 w-4" /> <span className="hidden sm:inline">Aprovar</span>
+              <CheckCircle2 className="h-4 w-4 flex-shrink-0" /> 
+              <span>Aprovar Todos</span>
             </Button>
             <Button 
               disabled={isProcessing}
               onClick={() => handleBatchAction("remove")} 
               variant="ghost"
-              className="flex-1 sm:flex-none text-destructive hover:bg-destructive/10 hover:text-destructive font-black rounded-xl sm:rounded-2xl flex gap-2 sm:gap-3 h-10 sm:h-12 px-4 sm:px-6 text-[10px] sm:text-xs uppercase tracking-widest transition-all active:scale-95"
+              className="flex-1 md:flex-none text-destructive hover:bg-destructive/10 hover:text-destructive font-black rounded-xl flex items-center justify-center gap-2 h-10 md:h-12 px-2 md:px-6 text-[10px] md:text-xs uppercase tracking-[0.2em] transition-all active:scale-95 whitespace-nowrap"
             >
-              <Trash2 className="h-4 w-4" /> <span className="hidden sm:inline">Recusar</span>
+              <Trash2 className="h-4 w-4 flex-shrink-0" /> 
+              <span>Recusar</span>
             </Button>
           </div>
-        </div>
+        </Dock>
       )}
     </div>
   );
