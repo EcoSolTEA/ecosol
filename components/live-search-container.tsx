@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import SearchBar from "./search-bar";
 import ServiceCard from "./service-card";
 import CategoryFilter from "./category-filter";
@@ -23,9 +24,26 @@ export default function LiveSearchContainer({
   const [searchTerm, setSearchTerm] = React.useState("");
   const [selectedCategory, setSelectedCategory] = React.useState("Todas");
   const [isSearching, setIsSearching] = React.useState(false);
+  
+  // 1. ESTADO DE CARREGAMENTO INICIAL (F5)
+  // Como as initialServices vêm do servidor, começamos como 'false' 
+  // Mas se você quiser ver o skeleton no refresh, podemos simular a hidratação
+  const [isInitialPageLoad, setIsInitialPageLoad] = React.useState(true);
+
+  React.useEffect(() => {
+    // Simula o tempo de "montagem" da página para exibir o skeleton apenas no F5
+    const timer = setTimeout(() => setIsInitialPageLoad(false), 800);
+    return () => clearTimeout(timer);
+  }, []);
 
   React.useEffect(() => {
     const fetchData = async () => {
+      // Se não há busca, voltamos para o random inicial sem skeleton
+      if (!searchTerm && selectedCategory === "Todas") {
+        setServices(initialServices);
+        return;
+      }
+
       setIsSearching(true);
       try {
         const query = new URLSearchParams({
@@ -33,20 +51,25 @@ export default function LiveSearchContainer({
           category: selectedCategory,
         });
         const res = await fetch(`/api/search?${query.toString()}`);
-        if (res.ok) setServices(await res.json());
+        if (res.ok) {
+          const data = await res.json();
+          setServices(data);
+        }
       } catch (err) {
         console.error("Erro busca:", err);
       } finally {
         setIsSearching(false);
       }
     };
+
     const timeoutId = setTimeout(fetchData, searchTerm ? 400 : 0);
     return () => clearTimeout(timeoutId);
-  }, [searchTerm, selectedCategory]);
+  }, [searchTerm, selectedCategory, initialServices]);
 
   return (
     <div className="w-full flex flex-col transition-colors duration-300">
-      {/* 1. Hero: py-2 e gap-3 - Cores Adaptativas */}
+      
+      {/* 1. Hero / Search Area */}
       <section className="flex flex-col items-center py-2 gap-3">
         <div className="text-center space-y-0">
           <h1 className="text-2xl font-bold text-foreground tracking-tighter uppercase leading-none">
@@ -59,7 +82,7 @@ export default function LiveSearchContainer({
         </div>
       </section>
 
-      {/* 2. Filtros: border-slate-50 -> border-border */}
+      {/* 2. Filtros */}
       <div className="py-1 border-b border-border mb-0">
         <CategoryFilter
           categories={categories}
@@ -68,28 +91,59 @@ export default function LiveSearchContainer({
         />
       </div>
 
-      {/* 3. Grid: mt-1 - Logística de Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 mt-1">
-        {isSearching ? (
-          Array.from({ length: 6 }).map((_, i) => <ServiceSkeleton key={i} />)
-        ) : services.length === 0 ? (
-          /* Empty State: bg-white -> bg-card | border-slate-100 -> border-border */
-          <div className="col-span-full text-center py-16 bg-card rounded-[2.5rem] border border-dashed border-border animate-in fade-in zoom-in-95 duration-500">
-            <div className="text-3xl mb-3 grayscale opacity-30">🔍</div>
-            <p className="text-muted-foreground font-black text-[10px] uppercase tracking-[0.3em]">
-              Nenhum resultado encontrado
-            </p>
-          </div>
-        ) : (
-          services.map((service) => (
-            <div
-              key={service.id}
-              className="animate-in fade-in slide-in-from-bottom-2 duration-300"
+      {/* 3. Grid com Logística de Exibição Inteligente */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 mt-4 relative">
+        
+        <AnimatePresence mode="popLayout">
+          {/* SKELETON: Só aparece no recarregamento da página (isInitialPageLoad) */}
+          {isInitialPageLoad ? (
+            Array.from({ length: 6 }).map((_, i) => (
+              <motion.div 
+                key={`skeleton-${i}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                <ServiceSkeleton />
+              </motion.div>
+            ))
+          ) : services.length === 0 && !isSearching ? (
+            /* Estado Vazio */
+            <motion.div 
+              key="empty-state"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="col-span-full text-center py-16 bg-card rounded-[2.5rem] border border-dashed border-border"
             >
-              <ServiceCard service={service} />
-            </div>
-          ))
-        )}
+              <div className="text-3xl mb-3 grayscale opacity-30">🔍</div>
+              <p className="text-muted-foreground font-black text-[10px] uppercase tracking-[0.3em]">
+                Nenhum resultado encontrado
+              </p>
+            </motion.div>
+          ) : (
+            /* CARDS: Eles permanecem na tela durante a busca (isSearching), permitindo o Shuffle */
+            services.map((service) => (
+              <motion.div
+                key={service.id}
+                layout
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ 
+                  opacity: isSearching ? 0.5 : 1, // Feedback visual de busca sem remover o card
+                  scale: 1 
+                }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{
+                  type: "spring",
+                  stiffness: 400,
+                  damping: 35,
+                  layout: { duration: 0.45 }
+                }}
+              >
+                <ServiceCard service={service} />
+              </motion.div>
+            ))
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

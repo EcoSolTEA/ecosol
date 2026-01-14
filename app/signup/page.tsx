@@ -16,12 +16,14 @@ import {
   ArrowRight, 
   CheckCircle2, 
   AlertCircle,
-  ArrowLeft 
+  ArrowLeft,
+  ShieldCheck
 } from "lucide-react";
 
 export default function SignupPage() {
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
+  const [acceptedTerms, setAcceptedTerms] = React.useState(false); // Flag de Consentimento
   const [loading, setLoading] = React.useState(false);
   const [message, setMessage] = React.useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [mounted, setMounted] = React.useState(false);
@@ -33,17 +35,31 @@ export default function SignupPage() {
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
+
+    // 1. Validação de Engenharia (Compliance)
+    if (!acceptedTerms) {
+      setMessage({ type: 'error', text: "Você precisa aceitar os termos de uso para continuar." });
+      return;
+    }
+
     setLoading(true);
     setMessage(null);
 
     try {
-      // 1. Cadastro no Supabase Auth (Logística de Credenciais)
+      /**
+       * 2. Cadastro no Supabase Auth
+       * Incluímos o consentimento nos metadados para registro jurídico (LGPD)
+       */
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: { 
           emailRedirectTo: `${window.location.origin}/login`,
-          data: { display_name: email.split('@')[0] } 
+          data: { 
+            display_name: email.split('@')[0],
+            accepted_terms: true,
+            accepted_at: new Date().toISOString()
+          } 
         }
       });
 
@@ -54,14 +70,14 @@ export default function SignupPage() {
       }
 
       if (data.user) {
-        // 2. Sincronização em "Background" com o Prisma (Consistência de Base)
+        // 3. Sincronização em Background com o Prisma
         fetch("/api/user/create", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email: data.user.email }),
         }).catch(err => console.error("Erro na sincronização Prisma:", err));
 
-        // 3. Reporte Imediato ao Usuário
+        // 4. Reporte Imediato ao Usuário
         setMessage({ 
           type: 'success', 
           text: "Sucesso! Enviamos um link de confirmação para o seu e-mail. Verifique sua caixa de entrada e o spam." 
@@ -69,6 +85,7 @@ export default function SignupPage() {
 
         setEmail("");
         setPassword("");
+        setAcceptedTerms(false);
       }
     } catch (err) {
       console.error(err);
@@ -81,7 +98,7 @@ export default function SignupPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background text-foreground p-4 transition-colors duration-500">
       
-      {/* Botão de Tema Flutuante (Padronizado com Login) */}
+      {/* Botão de Tema Flutuante */}
       <button
         onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
         className="fixed top-6 right-6 p-3 bg-card border border-border rounded-2xl shadow-lg hover:scale-110 active:scale-95 transition-all text-primary"
@@ -148,20 +165,41 @@ export default function SignupPage() {
               </div>
             </div>
 
+            {/* CHECKBOX DE TERMOS - DESIGN PREMIUM */}
+            <div 
+              className="flex items-start gap-3 px-1 py-2 group cursor-pointer"
+              onClick={() => setAcceptedTerms(!acceptedTerms)}
+            >
+              <div className={`mt-0.5 h-5 w-5 shrink-0 rounded-lg border-2 transition-all flex items-center justify-center ${
+                acceptedTerms 
+                  ? 'bg-primary border-primary shadow-[0_0_10px_rgba(var(--primary),0.3)]' 
+                  : 'border-border bg-muted/30 hover:border-primary/50'
+              }`}>
+                {acceptedTerms && <CheckCircle2 size={14} className="text-primary-foreground stroke-[3px]" />}
+              </div>
+              <p className="text-[10px] leading-relaxed text-muted-foreground font-bold uppercase tracking-wider select-none">
+                Eu li e aceito os <Link href="/terms" className="text-primary font-black hover:underline underline-offset-4 decoration-2">termos de uso</Link> e a política de privacidade da rede.
+              </p>
+            </div>
+
             <Button 
               type="submit" 
-              className="w-full h-16 rounded-4xl font-black text-lg shadow-lg shadow-primary/20 gap-3 transition-all active:scale-[0.98]" 
-              disabled={loading}
+              className={`w-full h-16 rounded-4xl font-black text-lg shadow-lg transition-all active:scale-[0.98] gap-3 ${
+                acceptedTerms 
+                  ? 'shadow-primary/20' 
+                  : 'opacity-50 grayscale cursor-not-allowed'
+              }`} 
+              disabled={loading || !acceptedTerms}
             >
               {loading ? <Loader2 className="animate-spin" /> : <ArrowRight size={20} />}
-              {loading ? "Cadastrando..." : "Finalizar Cadastro"}
+              {loading ? "Processando..." : "Finalizar Cadastro"}
             </Button>
           </form>
 
           <div className="mt-10 text-center border-t border-border pt-8">
             <p className="text-xs text-muted-foreground font-medium">
               Já possui uma conta?{" "}
-              <Link href="/login" className="text-primary font-black hover:underline underline-offset-4 flex items-center justify-center gap-1 mt-2">
+              <Link href="/login" className="text-primary font-black hover:underline underline-offset-4 flex items-center justify-center gap-1 mt-2 uppercase tracking-widest text-[10px]">
                 <ArrowLeft size={12} /> Acessar Login
               </Link>
             </p>

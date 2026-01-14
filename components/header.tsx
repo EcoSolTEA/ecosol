@@ -8,7 +8,6 @@ import { supabase } from "@/lib/supabase";
 import type { User } from "@supabase/supabase-js";
 import { Button } from "./ui/button";
 import NotificationModal from "./notification-modal";
-type ModalNotification = { id?: string; title?: string; message?: string; createdAt?: string | null; read: boolean; [key: string]: unknown };
 import { 
   Bell, 
   LogOut, 
@@ -17,26 +16,36 @@ import {
   PlusCircle,
   ChevronDown,
   Sun,
-  Moon
+  Moon,
+  Loader2
 } from "lucide-react";
+
+type ModalNotification = { 
+  id?: string; 
+  title?: string; 
+  message?: string; 
+  createdAt?: string | null; 
+  read: boolean; 
+  [key: string]: unknown 
+};
 
 export default function Header() {
   const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = React.useState(false); // Previne erro de hidratação
-  // use Supabase User type for state
+  const [mounted, setMounted] = React.useState(false);
   const [user, setUser] = React.useState<User | null>(null);
   const [role, setRole] = React.useState<string>("USER");
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = React.useState(false);
   const [notifications, setNotifications] = React.useState<ModalNotification[]>([]);
   const [pendingCount, setPendingCount] = React.useState(0);
+  const [isLoadingCount, setIsLoadingCount] = React.useState(false);
 
   const menuRef = React.useRef<HTMLDivElement>(null);
 
-  // 1. Logística de Hidratação
+  // 1. HIDRATAÇÃO (Evita erro de mismatch entre servidor e cliente)
   React.useEffect(() => setMounted(true), []);
 
-  // Lógica de fechamento de menu preservada
+  // 2. FECHAMENTO DE MENU (Click Outside)
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -47,14 +56,23 @@ export default function Header() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  /**
+   * 3. LOGÍSTICA DE DADOS (Admin & User)
+   */
   const loadAdminData = React.useCallback(async () => {
+    setIsLoadingCount(true);
     try {
-      const res = await fetch('/api/admin/count');
+      // Timestamp para evitar cache e garantir dado real
+      const res = await fetch(`/api/admin/count?t=${Date.now()}`);
       if (res.ok) {
         const { count } = await res.json();
         setPendingCount(count);
       }
-    } catch (err) { console.error("Erro count:", err); }
+    } catch (err) { 
+      console.error("Erro na contagem de pendentes:", err); 
+    } finally {
+      setIsLoadingCount(false);
+    }
   }, []);
 
   const loadUserData = React.useCallback(async (email: string) => {
@@ -63,15 +81,25 @@ export default function Header() {
         fetch(`/api/user/role?email=${email}`),
         fetch(`/api/user/notifications?email=${email}`)
       ]);
+      
       if (roleRes.ok) {
         const { role: userRole } = await roleRes.json();
         setRole(userRole);
         if (userRole === "ADMIN") await loadAdminData();
       }
-      if (notifyRes.ok) setNotifications(await notifyRes.json());
-    } catch (err) { console.error("Erro data fetch:", err); }
+      
+      if (notifyRes.ok) {
+        setNotifications(await notifyRes.json());
+      }
+    } catch (err) { 
+      console.error("Erro no fetch de dados do usuário:", err); 
+    }
   }, [loadAdminData]);
 
+  /**
+   * 4. AUTH & REALTIME SYNC
+   * Configuração para escutar mudanças no banco de dados instantaneamente
+   */
   React.useEffect(() => {
     const initAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -81,6 +109,19 @@ export default function Header() {
       }
     };
     initAuth();
+
+    // CANAL REALTIME: Escuta a tabela 'services' para atualizar o contador
+    const channel = supabase
+      .channel('header-stats-sync')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'services' },
+        () => {
+          // Se houver qualquer mudança (insert/update/delete), recontamos
+          loadAdminData();
+        }
+      )
+      .subscribe();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user?.email) {
@@ -93,8 +134,12 @@ export default function Header() {
         setPendingCount(0);
       }
     });
-    return () => subscription.unsubscribe();
-  }, [loadUserData]);
+
+    return () => {
+      subscription.unsubscribe();
+      supabase.removeChannel(channel);
+    };
+  }, [loadUserData, loadAdminData]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -103,11 +148,15 @@ export default function Header() {
 
   const hasUnread = notifications.some((n: ModalNotification) => !n.read);
 
+  // Renderização de segurança para o tema
+  if (!mounted) return <div className="h-14 w-full border-b bg-background" />;
+
   return (
     <>
       <header className="w-full border-b bg-background sticky top-0 z-40 border-border shadow-sm h-14 transition-colors">
         <div className="mx-auto max-w-6xl h-full flex items-center justify-between px-3 sm:px-4">
           
+          {/* LOGO AREA */}
           <Link href="/" className="flex items-center gap-2 group shrink-0">
             <div className="relative h-9 w-9 sm:h-10 sm:w-10 overflow-hidden rounded-full border border-border group-hover:scale-105 transition-transform">
               <Image src="/logo.png" alt="Logo Ecosol" fill className="object-cover" />
@@ -118,18 +167,16 @@ export default function Header() {
             </div>
           </Link>
 
+          {/* NAVIGATION & USER ACTIONS */}
           <nav className="flex items-center gap-1.5 sm:gap-4">
             {!user ? (
               <div className="flex items-center gap-2 sm:gap-3">
-                {/* 🌓 TOGGLE THEME - Para Visitantes */}
                 <button
                   onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
                   className="p-2 rounded-xl border border-border bg-card hover:bg-muted transition-all text-primary"
                 >
-                  {mounted && (theme === "dark" ? <Sun size={18} /> : <Moon size={18} />)}
+                  {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
                 </button>
-
-                {/* 🔑 BOTÃO ENTRAR - Com destaque (Primary) */}
                 <Link href="/login">
                   <Button className="bg-primary hover:bg-primary/90 text-primary-foreground font-black h-9 text-[10px] sm:text-xs px-4 sm:px-6 rounded-xl transition-all shadow-md uppercase tracking-widest">
                     Entrar
@@ -139,6 +186,7 @@ export default function Header() {
             ) : (
               <div className="flex items-center gap-1.5 sm:gap-3">
                 
+                {/* ADMIN DASHBOARD BUTTON & BADGE */}
                 {role === "ADMIN" && (
                   <Link href="/admin/dashboard" className="relative group">
                     <Button variant="outline" className="border-primary/20 text-primary font-black h-9 px-2 sm:px-4 rounded-xl flex items-center gap-2 bg-transparent hover:bg-primary/5 transition-all">
@@ -148,14 +196,17 @@ export default function Header() {
                         <span className="hidden sm:inline">Painel Admin</span>
                       </span>
                     </Button>
+                    
+                    {/* CONTADOR REAL-TIME */}
                     {pendingCount > 0 && (
-                      <div className="absolute -top-1 -right-1 bg-destructive text-white text-[9px] font-black h-5 w-5 rounded-full flex items-center justify-center ring-2 ring-background animate-bounce">
-                        {pendingCount}
+                      <div className="absolute -top-1.5 -right-1.5 bg-destructive text-white text-[10px] font-black h-5 min-w-[20px] px-1.5 rounded-full flex items-center justify-center ring-2 ring-background animate-in zoom-in duration-300 shadow-lg">
+                        {isLoadingCount ? <Loader2 size={10} className="animate-spin" /> : (pendingCount > 99 ? '99+' : pendingCount)}
                       </div>
                     )}
                   </Link>
                 )}
 
+                {/* SUBMIT BUTTON */}
                 <Link href="/submit">
                   <Button className="bg-primary hover:bg-primary/90 text-primary-foreground font-black h-9 px-2 sm:px-5 rounded-xl flex items-center gap-2 shadow-md">
                     <PlusCircle className="h-4 w-4" /> 
@@ -166,6 +217,7 @@ export default function Header() {
                   </Button>
                 </Link>
 
+                {/* NOTIFICATIONS BELL */}
                 <button 
                   onClick={() => setIsModalOpen(true)}
                   className="relative p-2 text-muted-foreground hover:text-primary transition-colors"
@@ -176,7 +228,7 @@ export default function Header() {
                   )}
                 </button>
 
-                {/* PERFIL */}
+                {/* USER PROFILE MENU */}
                 <div className="relative" ref={menuRef}>
                   <button 
                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
@@ -195,7 +247,7 @@ export default function Header() {
                         <p className="text-xs font-bold text-foreground truncate">{user.email}</p>
                       </div>
 
-                      {/* TOGGLE THEME INTERNO (Logado) */}
+                      {/* THEME TOGGLE (Inside Menu) */}
                       <div className="px-3 py-2 border-b border-border">
                         <div className="flex items-center justify-between bg-muted/50 p-1 rounded-xl">
                           <button 
@@ -213,6 +265,7 @@ export default function Header() {
                         </div>
                       </div>
 
+                      {/* MENU LINKS */}
                       <div className="p-1.5 space-y-1">
                         <Link href="/profile" onClick={() => setIsUserMenuOpen(false)} className="flex items-center gap-3 px-3 py-2 text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-xl transition-all">
                           <UserIcon className="h-4 w-4" /> Perfil da Conta
@@ -230,6 +283,7 @@ export default function Header() {
         </div>
       </header>
 
+      {/* NOTIFICATION MODAL */}
       <NotificationModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
