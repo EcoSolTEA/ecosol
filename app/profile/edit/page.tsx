@@ -6,11 +6,9 @@ import { useRouter } from "next/navigation";
 import Header from "@/components/header";
 import { supabase } from "@/lib/supabase";
 import { Loader2, Save, ArrowLeft, User, Phone, FileText } from "lucide-react";
-import Swal from 'sweetalert2';
 
-// Importação da Central de Estilo e do Gestor de Notificações Automático
-import { swalConfig } from "@/lib/swal";
-import { notify } from "@/lib/toast";
+// Importação da Central de Estilo do Swal
+import { showLoading, notify } from "@/lib/swal";
 
 const formatPhoneNumber = (value: string) => {
   if (!value) return value;
@@ -55,13 +53,7 @@ export default function EditProfile() {
     setSaving(true);
 
     // 1. Modal de Sincronização Neon (Padronizado via lib/swal)
-    Swal.fire({
-      ...swalConfig,
-      title: 'Sincronizando...',
-      text: 'Atualizando seus dados na rede Ecosol.',
-      didOpen: () => Swal.showLoading(),
-      allowOutsideClick: false,
-    });
+    const loadingSwal = showLoading('Sincronizando...');
 
     try {
       const res = await fetch("/api/user/profile", {
