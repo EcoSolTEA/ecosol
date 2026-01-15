@@ -152,12 +152,25 @@ export default function Header() {
           
           {/* LOGO AREA */}
           <Link href="/" className="flex items-center gap-2 group shrink-0">
-            <div className="relative h-9 w-9 sm:h-10 sm:w-10 overflow-hidden rounded-full border border-border group-hover:scale-105 transition-transform">
-              <Image src="/logo.png" alt="Logo Ecosol" fill className="object-cover" />
+            {/* Ajustado: removido rounded-full, border e alterado para object-contain */}
+            <div className="relative h-9 w-9 sm:h-10 sm:w-10 overflow-hidden rounded-md group-hover:scale-105 transition-transform">
+              <Image 
+                src="/ecosol-meta.png" 
+                alt="Logo Ecosol" 
+                fill 
+                className="object-contain" // Garante que a imagem apareça inteira sem cortes
+                priority
+              />
             </div>
+            
             <div className="flex flex-col">
-              <span className="font-black text-lg sm:text-xl tracking-tighter text-foreground leading-none uppercase">ECOSOL</span>
-              <span className="text-[8px] sm:text-[10px] text-primary font-bold uppercase tracking-[0.15em] sm:tracking-[0.2em]">Entre Autistas</span>
+              {/* Adicionado whitespace-nowrap para evitar quebra no mobile e tracking-tighter */}
+              <span className="font-black text-lg sm:text-xl tracking-tighter text-foreground leading-none uppercase whitespace-nowrap">
+                ECOSOL
+              </span>
+              <span className="text-[8px] sm:text-[10px] text-primary font-bold uppercase tracking-[0.15em] sm:tracking-[0.2em] whitespace-nowrap">
+                Entre Autistas
+              </span>
             </div>
           </Link>
 

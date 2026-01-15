@@ -178,7 +178,7 @@ graph LR
 ├── prisma/
 │   └── schema.prisma                    # Schema do banco
 ├── public/
-│   └── logo.png                         # Assets públicos
+│   └── ecosol-meta.png                         # Assets públicos
 ├── src/
 │   └── middleware.ts                    # Middleware Next.js
 ├── supabase/

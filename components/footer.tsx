@@ -40,7 +40,7 @@ const CONFIG = {
     description: "Plataforma colaborativa que conecta profissionais autistas, promovendo autonomia financeira e colaboração técnica em ambiente inclusivo.",
     copyright: `© ${new Date().getFullYear()} Ecosol • Gestão de Economia Solidária`,
     version: "v1.0.2",
-    logo: "/logo.png",
+    logo: "/ecosol-meta.png",
     termsUrl: "/terms"
   },
   contacts: [
@@ -145,18 +145,23 @@ export default function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 items-start">
           
           <div className="col-span-2 md:col-span-2 space-y-3">
-            <div className="flex items-center gap-2">
-              <div className="relative h-7 w-7 rounded-full border overflow-hidden">
-                <Image 
-                  src={platform.logo} 
-                  alt="Logo Ecosol" 
-                  fill 
-                  className="object-cover" 
-                  sizes="24px" 
-                />
-              </div>
-              <span className="font-black text-base uppercase tracking-tight">{platform.name}</span>
-            </div>
+            <div className="flex items-center gap-2 shrink-0">
+                {/* Ajustado: de rounded-full para rounded-md, removido border e alterado para contain */}
+                <div className="relative h-7 w-7 overflow-hidden rounded-md">
+                    <Image 
+                    src={platform.logo} 
+                    alt="Logo Ecosol" 
+                    fill 
+                    className="object-contain" 
+                    sizes="28px" 
+                    />
+                </div>
+                
+                {/* Ajustado: whitespace-nowrap e tracking-tighter para consistência com o header e evitar wrap */}
+                <span className="font-black text-base uppercase tracking-tighter whitespace-nowrap">
+                    {platform.name}
+                </span>
+                </div>
             
             <p className="text-[10px] leading-relaxed text-muted-foreground font-bold uppercase tracking-wider max-w-[400px] text-justify">
               {platform.description}
