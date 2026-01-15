@@ -77,6 +77,7 @@ graph LR
 
 ### 4.1 Estrutura Completa do Projeto
 
+```
     ecosol/
 ├── app/
 │   ├── admin/
@@ -185,9 +186,10 @@ graph LR
 │   └── config.toml                      # Configuração Supabase
 ├── .gitignore
 ├── app/globals.css                      # Estilos globais
-├── app/globals-sw.css                   # Service Worker
+├── app/globals-sw.css                   # Sweet Alert CSS
 ├── app/layout.tsx                       # Layout raiz
 ├── app/page.tsx                         # Página inicial
+├── blueprint.md                         # Blueprint projeto
 ├── components.json                      # Config shadcn/ui
 ├── create_bucket.sql                    # SQL para criar buckets
 ├── eslint.config.mjs                    # Config ESLint
@@ -195,8 +197,8 @@ graph LR
 ├── package.json                         # Dependências
 ├── postcss.config.mjs                   # Config PostCSS
 ├── prisma.config.ts                     # Config Prisma
-├── test-db.mjs                          # Testes de banco
 └── tsconfig.json                        # Config TypeScript
+```
 
 ### 4.2 Diagrama de Dependências Arquiteturais
 
@@ -363,33 +365,25 @@ sequenceDiagram
 
 ```mermaid
 flowchart TD
-    Start([Usuário autenticado]) --> A[provider/edit/[id]/page.tsx Página de edição]
-    
+    Start[Usuário autenticado] --> A[Página de edição do provedor]
     A --> B[Componente edit-form.tsx carregado]
-    B --> C[Validação de propriedade via lib/auth-check.ts]
-    
+    B --> C[Validação de propriedade via auth-check]
     C --> D{Permissão concedida?}
-    D -->|Sim| E[Formulário preenchido com dados atuais]
-    D -->|Não| F[Redireciona para login ou exibe erro]
-    
+    D -->|Sim| E[Formulário preenchido com dados]
+    D -->|Não| F[Redireciona para login]
     E --> G[Usuário edita campos]
     G --> H[Submete formulário]
-    
-    H --> I[Chama actions.ts Server Action]
+    H --> I[Chama Server Action]
     I --> J[Valida dados no servidor]
     J --> K[Atualiza registro via Prisma]
-    
     K --> L[Retorna resultado]
-    L --> M[Exibe feedback via lib/swal.ts]
-    
+    L --> M[Exibe feedback via SweetAlert]
     M --> N{Admin precisa aprovar?}
-    N -->|Sim| O[Envia para aprovação approved=false]
-    N -->|Não| P[Mantém approved=true]
-    
+    N -->|Sim| O[Envia para aprovação]
+    N -->|Não| P[Mantém aprovado]
     O --> Q[Notifica administrador]
-    P --> R[Serviço atualizado imediatamente visível]
-    
-    R --> End([Edição concluída])
+    P --> R[Serviço visível]
+    R --> End[Edição concluída]
     Q --> End
     
     style Start fill:#4caf50,color:#ffffff
@@ -443,52 +437,50 @@ stateDiagram-v2
 ### 6.1 Diagrama Entidade-Relacionamento
 
 ```mermaid
-erDiagram
-    User {
-        string id PK "CUID"
-        string name "Nome completo"
-        string email UK "Email único"
-        datetime emailVerified "Data de verificação"
-        string image "URL da imagem"
-        string password "Hash da senha"
-        string role "USER, ADMIN, MODERATOR"
-        string bio "Biografia"
-        datetime createdAt "Data de criação"
-        string phone "Telefone"
+classDiagram
+    class User {
+        +id: string PK "CUID"
+        +name: string "Nome completo"
+        +email: string UK "Email único"
+        +emailVerified: datetime "Data de verificação"
+        +image: string "URL da imagem"
+        +password: string "Hash da senha"
+        +role: string "USER, ADMIN, MODERATOR"
+        +bio: string "Biografia"
+        +createdAt: datetime "Data de criação"
+        +phone: string "Telefone"
     }
     
-    Notification {
-        int id PK "Autoincrement"
-        string userId FK "Referência ao usuário"
-        string message "Mensagem da notificação"
-        boolean read "Lida ou não"
-        datetime createdAt "Data de criação"
+    class Notification {
+        +id: int PK "Autoincrement"
+        +userId: string FK "Referência ao usuário"
+        +message: string "Mensagem da notificação"
+        +read: boolean "Lida ou não"
+        +createdAt: datetime "Data de criação"
     }
     
-    Service {
-        int id PK "Autoincrement"
-        string name "Nome do serviço"
-        string category "Categoria"
-        string image "URL da imagem"
-        string whatsapp "Número do WhatsApp"
-        string instagram "Perfil do Instagram"
-        string tiktok "Perfil do TikTok"
-        string email "Email de contato"
-        string site "Website"
-        boolean approved "Aprovado pelo admin"
-        boolean suspended "Suspenso pelo admin"
-        datetime createdAt "Data de criação"
-        string description "Descrição detalhada"
-        int views "Contador de visualizações"
-        datetime deletedAt "Data de exclusão (soft delete)"
+    class Service {
+        +id: int PK "Autoincrement"
+        +name: string "Nome do serviço"
+        +category: string "Categoria"
+        +image: string "URL da imagem"
+        +whatsapp: string "Número do WhatsApp"
+        +instagram: string "Perfil do Instagram"
+        +tiktok: string "Perfil do TikTok"
+        +email: string "Email de contato"
+        +site: string "Website"
+        +approved: boolean "Aprovado pelo admin"
+        +suspended: boolean "Suspenso pelo admin"
+        +createdAt: datetime "Data de criação"
+        +description: string "Descrição detalhada"
+        +views: int "Contador de visualizações"
+        +deletedAt: datetime "Data de exclusão (soft delete)"
     }
     
-    User ||--o{ Notification : "recebe"
-    User ||--o{ Service : "possui (implícito)"
+    User "1" --* "many" Notification : "recebe"
+    User "1" --* "many" Service : "possui"
     
-    note right of User
-        A relação User-Service é gerenciada por lógica de aplicação, não por FK direta para permitir flexibilidade nos fluxos de aprovação e moderação.
-    end note
+    note for User "A relação User-Service é gerenciada por lógica\nde aplicação, não por FK direta para permitir\nflexibilidade nos fluxos de aprovação e moderação."
 ```
 
 ### 6.2 Índices e Otimizações
@@ -660,51 +652,17 @@ graph LR
     style C3 fill:#b0bec5,color:#000000
 ```
 
-### 8.1 Arquitetura de Notificações
+### 8.2 Prioridades de Notificação
 
 ```mermaid
-graph LR
-    subgraph "Gatilhos"
-        T1[Novo Serviço<br/>Submetido] --> P[Processador<br/>de Eventos]
-        T2[Aprovação/Rejeição<br/>de Serviço] --> P
-        T3[Suspensão<br/>de Serviço] --> P
-        T4[Atualização<br/>de Perfil] --> P
-    end
-    
-    subgraph "Processamento"
-        P --> V{Validação<br/>e Filtragem}
-        V -->|Válido| F[Formatação<br/>e Enriquecimento]
-        V -->|Inválido| E[Registro de Erro<br/>em Logs]
-    end
-    
-    subgraph "Distribuição"
-        F --> C1[Email<br/>Resend]
-        F --> C2[Notificação In-app<br/>Interface do Usuário]
-        F --> C3[Log do Sistema<br/>Arquivos de Log]
-    end
-    
-    subgraph "Armazenamento"
-        C2 --> DB[(Banco de Dados<br/>PostgreSQL)]
-        C3 --> LOG[Sistema de Logs<br/>Arquivos]
-    end
-    
-    subgraph "Apresentação"
-        DB --> UI[Interface do Usuário<br/>Frontend]
-        UI --> R[Leitura/Marcação<br/>como Lida]
-        R --> A[Ações do Usuário<br/>Feedback]
-    end
-    
-    style T1 fill:#e1f5fe,color:#000000
-    style T2 fill:#f3e5f5,color:#000000
-    style T3 fill:#e8f5e9,color:#000000
-    style T4 fill:#fff3e0,color:#000000
-    style P fill:#ffcc80,color:#000000
-    style V fill:#ffab91,color:#000000
-    style F fill:#c5e1a5,color:#000000
-    style C1 fill:#80deea,color:#000000
-    style C2 fill:#ce93d8,color:#000000
-    style C3 fill:#b0bec5,color:#000000
+pie title Distribuição de Prioridades de Notificação
+    "Crítica : 5%" : 5
+    "Alta : 15%" : 15
+    "Média : 40%" : 40
+    "Baixa : 35%" : 35
+    "Sistema : 5%" : 5
 ```
+
 ### 8.3 Tipos de Notificação
 
 | **Tipo** | **Gatilho** | **Prioridade** | **Canal** | **Template** |
@@ -903,14 +861,14 @@ gantt
 graph TD
     subgraph "Limites por Role"
         V[Visitor<br/>100 req/hora] --> V1[Raiz]
-        U[User<br/>1000 req/hora] --> U1[/api/user, /api/submissions]
-        M[Moderator<br/>5000 req/hora] --> M1[/api/pending, /api/approve]
-        A[Admin<br/>10000 req/hora] --> A1[/api/admin, /api/trash]
+        U[User<br/>1000 req/hora] --> U1[API User & Submissions]
+        M[Moderator<br/>5000 req/hora] --> M1[API Pending & Approve]
+        A[Admin<br/>10000 req/hora] --> A1[API Admin & Trash]
     end
     
     subgraph "Estratégia de Limitação"
-        L1[Token Bucket<br/>Algoritmo] --> L2[Redis Storage<br/>Estado distribuído]
-        L3[IP-based Limiting<br/>Limite por IP] --> L4[Geolocation Aware<br/>Limites regionais]
+        L1[Token Bucket Algoritmo] --> L2[Redis Storage]
+        L3[IP-based Limiting] --> L4[Geolocation Aware]
     end
     
     V1 --> L1
@@ -1129,28 +1087,46 @@ gantt
     Production Launch :2026-03-18, 7d
 ```
 
-### 13.1 Fase Atual (v1.0)
+### 13.2 Metas de Crescimento
 
 ```mermaid
-gantt
-    title Roadmap EcoSol v1.0 - Q1 2026
-    dateFormat YYYY-MM-DD
-    axisFormat %d/%m
+graph LR
+    subgraph "Metas v1.0<br/>Q1 2026"
+        A1[Usuários ativos<br/>500] --> B1[Serviços ativos<br/>200]
+        B1 --> C1[Conexões/mês<br/>100]
+        C1 --> D1[Satisfação<br/>80%]
+        D1 --> E1[Tempo resposta<br/><2s]
+    end
     
-    section Core Platform
-    Authentication System :2026-01-01, 14d
-    Service Management :2026-01-15, 21d
-    Admin Dashboard :2026-01-22, 14d
-    Search & Discovery :2026-02-05, 14d
+    subgraph "Metas v1.5<br/>Q2 2026"
+        A2[Usuários ativos<br/>2,000] --> B2[Serviços ativos<br/>1,000]
+        B2 --> C2[Conexões/mês<br/>500]
+        C2 --> D2[Satisfação<br/>85%]
+        D2 --> E2[Tempo resposta<br/><1s]
+    end
     
-    section Quality & Polish
-    Accessibility Audit :2026-02-12, 7d
-    Performance Optimization :2026-02-19, 7d
-    Security Review :2026-02-26, 7d
+    subgraph "Metas v2.0<br/>Q3 2026"
+        A3[Usuários ativos<br/>10,000] --> B3[Serviços ativos<br/>5,000]
+        B3 --> C3[Conexões/mês<br/>2,500]
+        C3 --> D3[Satisfação<br/>90%]
+        D3 --> E3[Tempo resposta<br/><500ms]
+    end
     
-    section Launch
-    Beta Testing :2026-03-04, 14d
-    Production Launch :2026-03-18, 7d
+    style A1 fill:#e1f5fe,color:#000000
+    style B1 fill:#f3e5f5,color:#000000
+    style C1 fill:#e8f5e9,color:#000000
+    style D1 fill:#fff3e0,color:#000000
+    style E1 fill:#ffebee,color:#000000
+    style A2 fill:#bbdefb,color:#000000
+    style B2 fill:#ce93d8,color:#000000
+    style C2 fill:#a5d6a7,color:#000000
+    style D2 fill:#ffe082,color:#000000
+    style E2 fill:#ffab91,color:#000000
+    style A3 fill:#64b5f6,color:#ffffff
+    style B3 fill:#ba68c8,color:#ffffff
+    style C3 fill:#4caf50,color:#ffffff
+    style D3 fill:#ffb74d,color:#000000
+    style E3 fill:#ff8a65,color:#000000
 ```
 
 ### 13.3 Próximas Fases
@@ -1183,41 +1159,41 @@ timeline
 ```mermaid
 mindmap
   root((EcoSol))
-    Princípios Realizados
-      Segurança como fundamento
+    (Princípios Realizados)
+      [Segurança como fundamento]
         Validação manual rigorosa
         Proteção comunidade vulnerável
         Múltiplas camadas segurança
-      Transparência radical
+      [Transparência radical]
         Processos públicos
         Auditáveis e explicáveis
         Código aberto
-      Acessibilidade inclusiva
+      [Acessibilidade inclusiva]
         Design neuro-inclusivo
         Desde primeira linha código
         WCAG AA compliance
-      Economia solidária
+      [Economia solidária]
         Sem intermediários financeiros
         100% valor para prestador
         Conexão direta WhatsApp
-      Governança comunitária
+      [Governança comunitária]
         Código aberto
         Decisões participativas
         Repositório público
-    Lições Aprendidas
-      Design First inclusão
+    (Lições Aprendidas)
+      [Design First inclusão]
         Evita retrabalho caro
         Garante inclusão desde início
-      Validação múltiplas camadas
+      [Validação múltiplas camadas]
         Frontend, backend, banco
         Defesa em profundidade
-      Documentação como produto
+      [Documentação como produto]
         Para desenvolvimento
         Para replicação
-      Métricas com propósito
+      [Métricas com propósito]
         Técnicas ligadas impacto social
         Impacto mensurável
-      Código como declaração ética
+      [Código como declaração ética]
         Decisões técnicas refletem valores
         Tecnologia como ferramenta justiça
 ```
@@ -1250,110 +1226,50 @@ quadrantChart
 
 ```mermaid
 graph TD
-    ECO["ecosol/<br/>Raiz do Projeto"] --> APP["app/<br/>Next.js App Router"]
-    ECO --> COMP["components/<br/>Componentes React"]
-    ECO --> CONST["constants/<br/>Constantes"]
-    ECO --> LIB["lib/<br/>Bibliotecas e Utilitários"]
-    ECO --> OAUTH["oauth/consent/<br/>Consentimento OAuth"]
-    ECO --> PRISMA["prisma/<br/>Configuração Prisma"]
-    ECO --> PUB["public/<br/>Arquivos Públicos"]
-    ECO --> SRC["src/<br/>Código Fonte"]
-    ECO --> SUPABASE["supabase/<br/>Configuração Supabase"]
-    ECO --> CONFIGS["Configurações<br/>Arquivos de Configuração"]
+    ECO[ecosol<br/>Raiz do Projeto]
     
-    APP --> ADMIN["admin/<br/>Painel Administrativo"]
-    APP --> API["api/<br/>API Routes"]
-    APP --> LOGIN["login/<br/>Login"]
-    APP --> PROFILE["profile/<br/>Perfil do Usuário"]
-    APP --> PROVIDER["provider/<br/>Provedores de Serviço"]
-    APP --> SIGNUP["signup/<br/>Cadastro"]
-    APP --> SUBMIT["submit/<br/>Submissão de Serviço"]
-    APP --> TERMS["terms/<br/>Termos de Uso"]
-    APP --> UPDATE["update-password/<br/>Atualização de Senha"]
+    ECO --> APP[app<br/>Next.js App Router]
+    ECO --> COMP[components<br/>Componentes]
+    ECO --> LIB[lib<br/>Bibliotecas]
+    ECO --> PRISMA[prisma<br/>ORM]
+    ECO --> PUBLIC[public<br/>Assets]
+    ECO --> CONFIGS[Configurações<br/>Arquivos]
     
-    ADMIN --> DASH["dashboard/<br/>Dashboard"]
-    ADMIN --> EDIT["provider/[id]/edit/<br/>Edição Administrativa"]
-    ADMIN --> TRASH["trash/<br/>Lixeira"]
+    APP --> ADMIN[admin<br/>Administração]
+    APP --> API[api<br/>Endpoints]
+    APP --> AUTH[Autenticação<br/>login/signup]
+    APP --> PROVIDER[provider<br/>Serviços]
     
-    API --> API_ADMIN["admin/<br/>Endpoints Admin"]
-    API --> API_APPROVE["approve/<br/>Aprovação"]
-    API --> API_COUNT["count/<br/>Contadores"]
-    API --> API_PENDING["pending/<br/>Pendentes"]
-    API --> API_TRASH["trash/<br/>Lixeira API"]
-    API --> API_NOTIF["notifications/<br/>Notificações"]
-    API --> API_SEARCH["search/<br/>Busca"]
-    API --> API_SUB["submissions/<br/>Submissões"]
-    API --> API_USER["user/<br/>Usuários"]
-    API --> API_ROLE["role/<br/>Roles e Permissões"]
+    ADMIN --> DASH[dashboard<br/>Painel]
+    ADMIN --> TRASH[trash<br/>Lixeira]
     
-    API_USER --> USER_CREATE["create/<br/>Criação"]
-    API_USER --> USER_NOTIF["notifications/[id]/<br/>Notificações por Usuário"]
-    API_USER --> USER_READ["read/<br/>Leitura"]
-    API_USER --> USER_PROFILE["profile/<br/>Perfil"]
+    API --> API_USER[user<br/>Usuários]
+    API --> API_SERV[services<br/>Serviços]
+    API --> API_ADMIN[admin<br/>Admin]
     
-    PROVIDER --> PROV_ID["[id]/<br/>Perfil Dinâmico"]
-    PROVIDER --> PROV_EDIT["edit/<br/>Edição"]
-    PROVIDER --> PROV_ACT["actions.ts<br/>Ações"]
+    COMP --> UI[ui<br/>shadcn/ui]
+    COMP --> CUSTOM[custom<br/>EcoSol]
     
-    PROV_EDIT --> EDIT_ID["[id]/<br/>Edição Dinâmica"]
-    PROV_EDIT --> EDIT_FORM["edit-form.tsx<br/>Formulário de Edição"]
+    UI --> BUTTON[button.tsx]
+    UI --> CARD[card.tsx]
+    UI --> INPUT[input.tsx]
     
-    COMP --> UI["ui/<br/>Componentes Base"]
-    COMP --> CUSTOM["custom/<br/>Componentes Customizados"]
+    CUSTOM --> SEARCH[search-bar.tsx]
+    CUSTOM --> SERVICE[service-card.tsx]
+    CUSTOM --> WHATSAPP[whatsapp-button.tsx]
     
-    UI --> UI_BTN["button.tsx<br/>Botões"]
-    UI --> UI_CARD["card.tsx<br/>Cards"]
-    UI --> UI_CHK["checkbox.tsx<br/>Checkboxes"]
-    UI --> UI_CMD["command.tsx<br/>Comandos"]
-    UI --> UI_DOCK["dock.tsx<br/>Dock de Navegação"]
-    UI --> UI_INP["input.tsx<br/>Inputs"]
-    UI --> UI_POP["popover.tsx<br/>Popovers"]
-    UI --> UI_SEL["select.tsx<br/>Selects"]
-    UI --> UI_TOG["toggle.tsx<br/>Toggles"]
+    LIB --> AUTH_CHECK[auth-check.ts]
+    LIB --> PRISMA_CLIENT[prisma.ts]
+    LIB --> UTILS[utils.ts]
     
-    CUSTOM --> CUST_CAT["category-filter.tsx<br/>Filtro por Categoria"]
-    CUSTOM --> CUST_CLR["clear-notifications-button.tsx<br/>Botão Limpar Notificações"]
-    CUSTOM --> CUST_CON["contact-icons.tsx<br/>Ícones de Contato"]
-    CUSTOM --> CUST_HDR["header.tsx<br/>Cabeçalho"]
-    CUSTOM --> CUST_SRC["live-search-container.tsx<br/>Container de Busca"]
-    CUSTOM --> CUST_LDM["load-more.tsx<br/>Carregar Mais"]
-    CUSTOM --> CUST_NAC["notification-actions.tsx<br/>Ações de Notificação"]
-    CUSTOM --> CUST_NMD["notification-modal.tsx<br/>Modal de Notificação"]
-    CUSTOM --> CUST_SBR["search-bar.tsx<br/>Barra de Busca"]
-    CUSTOM --> CUST_SCD["service-card.tsx<br/>Card de Serviço"]
-    CUSTOM --> CUST_SSK["service-skeleton.tsx<br/>Esqueleto de Serviço"]
-    CUSTOM --> CUST_THM["theme-provider.tsx<br/>Provedor de Tema"]
-    CUSTOM --> CUST_WAB["whatsapp-button.tsx<br/>Botão WhatsApp"]
-    
-    LIB --> LIB_AUTH["auth-check.ts<br/>Verificação de Auth"]
-    LIB --> LIB_MAIL["mail.ts<br/>Sistema de Email"]
-    LIB --> LIB_PRISMA["prisma.ts<br/>Cliente Prisma"]
-    LIB --> LIB_SUPA["supabase.ts<br/>Cliente Supabase"]
-    LIB --> LIB_SWAL["swal.ts<br/>Wrapper SweetAlert2"]
-    LIB --> LIB_UTIL["utils.ts<br/>Utilitários Gerais"]
-    
-    CONFIGS --> CFG_GIT[".gitignore<br/>Git Ignore"]
-    CONFIGS --> CFG_CSS["globals.css<br/>Estilos Globais"]
-    CONFIGS --> CFG_SWC["globals-sw.css<br/>Service Worker CSS"]
-    CONFIGS --> CFG_LAY["layout.tsx<br/>Layout Raiz"]
-    CONFIGS --> CFG_PAG["page.tsx<br/>Página Inicial"]
-    CONFIGS --> CFG_COMP["components.json<br/>Configuração de Componentes"]
-    CONFIGS --> CFG_SQL["create_bucket.sql<br/>SQL para Criar Buckets"]
-    CONFIGS --> CFG_ESL["eslint.config.mjs<br/>Configuração ESLint"]
-    CONFIGS --> CFG_NEXT["next.config.ts<br/>Configuração Next.js"]
-    CONFIGS --> CFG_PKG["package.json<br/>Dependências"]
-    CONFIGS --> CFG_POST["postcss.config.mjs<br/>Configuração PostCSS"]
-    CONFIGS --> CFG_PRISMA["prisma.config.ts<br/>Configuração Prisma"]
-    CONFIGS --> CFG_TSC["tsconfig.json<br/>Configuração TypeScript"]
-    
-    style ECO fill:#4caf50,color:#fff,stroke:#000,stroke-width:2px
-    style APP fill:#2196f3,color:#fff
-    style COMP fill:#ff9800,color:#000
-    style LIB fill:#9c27b0,color:#fff
-    style ADMIN fill:#3f51b5,color:#fff
-    style API fill:#009688,color:#fff
-    style UI fill:#ff5722,color:#fff
-    style CUSTOM fill:#607d8b,color:#fff
+    style ECO fill:#4caf50,color:#ffffff,stroke:#000,stroke-width:2px
+    style APP fill:#2196f3,color:#ffffff
+    style COMP fill:#ff9800,color:#000000
+    style LIB fill:#9c27b0,color:#ffffff
+    style ADMIN fill:#3f51b5,color:#ffffff
+    style API fill:#009688,color:#ffffff
+    style UI fill:#ff5722,color:#ffffff
+    style CUSTOM fill:#607d8b,color:#ffffff
 ```
 
 ### B. Metadados Técnicos
