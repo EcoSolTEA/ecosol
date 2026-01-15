@@ -71,16 +71,28 @@ const ContactCard = ({ contact, message }: { contact: Contact; message: string }
       href={whatsappUrl}
       target="_blank" 
       rel="noopener noreferrer"
-      className="flex items-center justify-between p-1.5 gap-3 rounded-xl bg-background/50 border hover:border-primary/30 transition-colors group w-full"
+      className="flex items-center p-1.5 rounded-xl bg-background/50 border hover:border-primary/30 transition-colors group w-full"
     >
-      <div className="flex items-center gap-2">
+      {/* Lado Esquerdo: Ícone e Texto */}
+      <div className="flex items-center gap-2 shrink-0">
         <MessageCircle size={12} className="text-primary" />
-        <div>
-          <span className="text-[9px] font-black uppercase tracking-tight block leading-none">{contact.name}</span>
-          <span className="text-[8px] text-muted-foreground font-bold uppercase tracking-tighter block mt-0.5">Solicitar Link</span>
+        <div className="flex flex-col justify-center">
+          <span className="text-[9px] font-black uppercase tracking-tight block leading-none">
+            {contact.name}
+          </span>
+          <span className="text-[8px] text-muted-foreground font-bold uppercase tracking-tighter block leading-none mt-1">
+            Solicitar Link
+          </span>
         </div>
       </div>
-      <ArrowRight size={10} className="text-primary opacity-0 group-hover:translate-x-1 group-hover:opacity-100 transition-all" />
+
+      {/* Meio/Direita: Contêiner que centraliza a seta no espaço vazio */}
+      <div className="flex-1 flex justify-center items-center">
+        <ArrowRight 
+          size={10} 
+          className="text-primary opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" 
+        />
+      </div>
     </a>
   );
 };
@@ -193,19 +205,19 @@ export default function Footer() {
             </div>
           </div>
 
-          <div className="col-span-1 md:col-span-1 bg-muted/30 border rounded-[1.5rem] p-2 flex flex-col items-center justify-start w-full mx-auto">
-            <h3 className="text-[9px] font-black uppercase tracking-[0.4em] text-muted-foreground/60 mb-1 border-b border-border/50 pb-1 w-full text-center">
-              Comunidade
+          <div className="md:col-span-1 bg-muted/30 border rounded-[1.5rem] p-2 flex flex-col items-center justify-start w-full max-w-[180px] mx-auto">
+            <h3 className="text-[9px] font-black uppercase tracking-[0.4em] text-muted-foreground/60 mb-2 border-b border-border/50 pb-1 w-full text-center">
+                Comunidade
             </h3>
-            <div className="flex flex-col gap-1 w-full items-center">
-              {contacts.map((contact) => (
+            <div className="flex flex-col gap-1.5 w-full items-center">
+                {contacts.map((contact) => (
                 <ContactCard key={contact.phone} contact={contact} message={waMessage} />
-              ))}
-              <div className="text-center w-full mt-1">
+                ))}
+                <div className="text-center w-full">
                 <span className="text-[8px] font-bold text-muted-foreground/60 uppercase tracking-wider leading-none">
-                  Até 24h
+                    Resposta em até 24h
                 </span>
-              </div>
+                </div>
             </div>
           </div>
         </div>
