@@ -114,7 +114,7 @@ export default function SubmitPage() {
     setIsSubmitting(true);
 
     // 1. Modal de Sincronização Neon Centralizado
-    const loadingSwal = showLoading("Sincronizando...", "Enviando seu negócio para análise da curadoria.");
+    showLoading("Sincronizando...", "Enviando seu negócio para análise da curadoria.");
 
     try {
       let imageUrl = "";
