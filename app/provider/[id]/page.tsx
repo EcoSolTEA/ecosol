@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import Image from "next/image";
 import { cookies } from "next/headers";
-import { createServerClient } from '@supabase/ssr';
+import { createServerClient } from "@supabase/ssr";
 import WhatsAppButton from "@/components/whatsapp-button";
 import { ArrowLeft, Settings, Eye } from "lucide-react";
 
@@ -24,17 +24,24 @@ export default async function ProviderPage({
     { cookies: { getAll: () => cookieStore.getAll() } }
   );
 
-  const [{ data: { user } }, service] = await Promise.all([
+  const [
+    {
+      data: { user },
+    },
+    service,
+  ] = await Promise.all([
     supabase.auth.getUser(),
-    prisma.service.findUnique({ where: { id: parseInt(id) } })
+    prisma.service.findUnique({ where: { id: parseInt(id) } }),
   ]);
 
   if (!service) return notFound();
 
-  const dbUser = user ? await prisma.user.findUnique({
-    where: { email: user.email },
-    select: { role: true }
-  }) : null;
+  const dbUser = user
+    ? await prisma.user.findUnique({
+        where: { email: user.email },
+        select: { role: true },
+      })
+    : null;
 
   const isAdmin = dbUser?.role === "ADMIN";
   const isOwner = user?.email === service.email;
@@ -45,7 +52,7 @@ export default async function ProviderPage({
   if (service.approved && !canEdit) {
     await prisma.service.update({
       where: { id: parseInt(id) },
-      data: { views: { increment: 1 } }
+      data: { views: { increment: 1 } },
     });
   }
 
@@ -53,18 +60,27 @@ export default async function ProviderPage({
     /* Logística Visual: bg-slate-50 -> bg-background | text-slate-900 -> text-foreground */
     <div className="min-h-screen bg-background text-foreground pb-12 transition-colors duration-300">
       <Header />
-      
+
       <main className="mx-auto max-w-4xl px-4 py-6 md:py-8">
-        
         {/* 1. Navegação de Topo */}
         <div className="flex justify-between items-center mb-4 px-2">
-          <Link href="/" className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors">
+          <Link
+            href="/"
+            className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors"
+          >
             <ArrowLeft className="h-3 w-3" /> Voltar para a busca
           </Link>
-          
+
           {canEdit && (
-            <Link href={isAdmin ? `/admin/provider/${id}/edit` : `/provider/edit/${id}`}>
-              <Button variant="outline" className="h-8 border-primary/20 text-primary font-black text-[9px] uppercase tracking-widest rounded-xl hover:bg-primary/10 transition-all flex gap-2">
+            <Link
+              href={
+                isAdmin ? `/admin/provider/${id}/edit` : `/provider/edit/${id}`
+              }
+            >
+              <Button
+                variant="outline"
+                className="h-8 border-primary/20 text-primary font-black text-[9px] uppercase tracking-widest rounded-xl hover:bg-primary/10 transition-all flex gap-2"
+              >
                 <Settings className="h-3.5 w-3.5" />
                 {isAdmin ? "Admin Edit" : "Editar Negócio"}
               </Button>
@@ -74,7 +90,6 @@ export default async function ProviderPage({
 
         {/* 2. Card Principal: bg-white -> bg-card | border-slate-100 -> border-border */}
         <div className="bg-card rounded-[2.5rem] shadow-sm border border-border p-4 md:p-8 flex flex-col md:flex-row gap-6 md:gap-10">
-          
           {/* Imagem: bg-slate-50 -> bg-muted */}
           <div className="w-full md:w-2/5 aspect-square rounded-4xl bg-muted overflow-hidden border border-border shadow-inner relative">
             {service.image ? (
@@ -83,6 +98,7 @@ export default async function ProviderPage({
                 alt={service.name}
                 fill
                 priority
+                loading="eager"
                 sizes="(max-width: 768px) 100vw, 40vw"
                 className="object-cover"
               />
@@ -123,20 +139,23 @@ export default async function ProviderPage({
                 <h3 className="text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground/50">
                   Canais de Atendimento
                 </h3>
-                <ContactIcons 
+                <ContactIcons
                   contacts={{
                     whatsapp: service.whatsapp ?? undefined,
                     instagram: service.instagram ?? undefined,
                     tiktok: service.tiktok ?? undefined,
                     email: service.email ?? undefined,
                     site: service.site ?? undefined,
-                  }} 
+                  }}
                 />
               </div>
 
               <div className="pt-2">
                 {service.whatsapp && (
-                  <WhatsAppButton phone={service.whatsapp} providerEmail={service.email || ""} />
+                  <WhatsAppButton
+                    phone={service.whatsapp}
+                    providerEmail={service.email || ""}
+                  />
                 )}
               </div>
             </div>
