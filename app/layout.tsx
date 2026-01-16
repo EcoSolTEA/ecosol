@@ -103,7 +103,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <head>
-        <link rel="manifest" href="/api/manifest" />
+        <link id="site-manifest" rel="manifest" href="/manifest-light.json" />
         <meta name="theme-color" data-dynamic />
         <meta
           name="theme-color"
@@ -148,6 +148,26 @@ export default function RootLayout({
       }
     }
   }).observe(document.documentElement, { attributes: true });
+})();`,
+          }}
+        />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){
+  try{
+    var link = document.getElementById('site-manifest');
+    if(!link) return;
+    var setManifest = function(prefersDark){
+      link.setAttribute('href', prefersDark ? '/manifest-dark.json' : '/manifest-light.json');
+    };
+    var mql = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+    if(mql){
+      setManifest(mql.matches);
+      mql.addEventListener ? mql.addEventListener('change', function(e){ setManifest(e.matches); }) : mql.addListener(function(e){ setManifest(e.matches); });
+    } else {
+      setManifest(false);
+    }
+  }catch(e){}
 })();`,
           }}
         />
