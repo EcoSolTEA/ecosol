@@ -376,6 +376,27 @@ export default function Header() {
             <span className="text-[11px]">Notificações</span>
           </button>
 
+          {role === "ADMIN" && (
+            <Link
+              href="/admin/dashboard"
+              className="relative flex flex-col items-center justify-center text-xs text-muted-foreground"
+            >
+              <LayoutDashboard className="h-6 w-6" />
+              <span className="text-[11px]">Admin</span>
+              {pendingCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-destructive text-white text-[10px] font-black h-4 min-w-4.5 px-1 rounded-full flex items-center justify-center">
+                  {isLoadingCount ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : pendingCount > 99 ? (
+                    "99+"
+                  ) : (
+                    pendingCount
+                  )}
+                </span>
+              )}
+            </Link>
+          )}
+
           {/* theme toggle removed from bottom bar (handled in profile/settings) */}
 
           <Link

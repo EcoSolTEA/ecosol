@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -14,6 +14,9 @@ interface CarouselProps {
   interval?: number;
   showIndicators?: boolean;
   showNavigation?: boolean;
+  cardHeight?: string;
+  reverse?: boolean;
+  cardWidth?: string;
 }
 
 export function Carousel({
@@ -23,19 +26,22 @@ export function Carousel({
   interval = 5000,
   showIndicators = true,
   showNavigation = true,
+  cardHeight = "h-48 sm:h-56 md:h-64",
+  cardWidth = "w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl",
+  reverse = true,
 }: CarouselProps) {
   const [currentIndex, setCurrentIndex] = React.useState(0);
   const [isPaused, setIsPaused] = React.useState(false);
-  const items = React.Children.toArray(children);
-  const itemsToShow = items.length > 3 ? 3 : items.length;
+  const rawItems = React.Children.toArray(children);
+  const items = reverse ? [...rawItems].reverse() : rawItems;
 
   const nextSlide = React.useCallback(() => {
     setCurrentIndex((prev) => (prev + 1) % items.length);
   }, [items.length]);
 
-  const prevSlide = () => {
+  const prevSlide = React.useCallback(() => {
     setCurrentIndex((prev) => (prev - 1 + items.length) % items.length);
-  };
+  }, [items.length]);
 
   const goToSlide = (index: number) => {
     setCurrentIndex(index);
@@ -62,12 +68,12 @@ export function Carousel({
 
   if (items.length === 0) return null;
 
-  // For mobile, show single slide
-  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
-  const visibleCount = isMobile ? 1 : itemsToShow;
+  // For mobile, show single slide. For desktop force single visible item so
+  // the card is centered with space on left/right.
+  const visibleCount = 1;
 
   return (
-    <div 
+    <div
       className={cn("relative w-full overflow-hidden", className)}
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
@@ -87,18 +93,16 @@ export function Carousel({
             damping: 30,
           }}
           style={{
-            width: `${(items.length / visibleCount) * 100}%`,
+            width: `100%`,
           }}
         >
           {items.map((child, index) => (
             <div
               key={index}
-              className="shrink-0 px-2"
-              style={{ width: `${100 / visibleCount}%` }}
+              className="shrink-0 px-0 flex items-center justify-center"
+              style={{ flex: `0 0 ${100 / visibleCount}%` }}
             >
-              <div className="h-full">
-                {child}
-              </div>
+              <div className={`${cardWidth} ${cardHeight} h-full`}>{child}</div>
             </div>
           ))}
         </motion.div>
@@ -110,27 +114,27 @@ export function Carousel({
           <Button
             variant="outline"
             size="icon"
-            className="absolute left-2 top-1/2 -translate-y-1/2 z-10 bg-background/80 backdrop-blur-sm border-border hover:bg-accent h-10 w-10 rounded-full shadow-lg"
+            className="absolute left-2 top-1/2 -translate-y-1/2 z-10 bg-background/80 backdrop-blur-sm border-border hover:bg-accent h-8 w-8 rounded-full shadow-lg"
             onClick={prevSlide}
             aria-label="Previous slide"
           >
-            <ChevronLeft className="h-5 w-5" />
+            <ChevronLeft className="h-4 w-4" />
           </Button>
           <Button
             variant="outline"
             size="icon"
-            className="absolute right-2 top-1/2 -translate-y-1/2 z-10 bg-background/80 backdrop-blur-sm border-border hover:bg-accent h-10 w-10 rounded-full shadow-lg"
+            className="absolute right-2 top-1/2 -translate-y-1/2 z-10 bg-background/80 backdrop-blur-sm border-border hover:bg-accent h-8 w-8 rounded-full shadow-lg"
             onClick={nextSlide}
             aria-label="Next slide"
           >
-            <ChevronRight className="h-5 w-5" />
+            <ChevronRight className="h-4 w-4" />
           </Button>
         </>
       )}
 
       {/* Indicators */}
       {showIndicators && items.length > 1 && (
-        <div className="flex justify-center items-center gap-2 mt-6">
+        <div className="flex justify-center items-center gap-2 mt-4 sm:mt-6">
           {items.map((_, index) => (
             <button
               key={index}

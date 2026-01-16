@@ -3,18 +3,12 @@ import Header from "@/components/header";
 import ThemeToggleInline from "@/components/theme-toggle-inline";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import LogoutButton from "@/components/logout-button";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createServerClient } from "@supabase/ssr";
 import NotificationActions from "@/components/notification-actions";
 import { UserCircle, Settings, Bell, Eye, MessageSquare } from "lucide-react";
-import {
-  Key,
-  ReactElement,
-  JSXElementConstructor,
-  ReactNode,
-  ReactPortal,
-} from "react";
 
 export default async function ProfilePage() {
   const cookieStore = await cookies();
@@ -79,6 +73,7 @@ export default async function ProfilePage() {
                 <Settings className="w-4 h-4" /> Configurações
               </Button>
             </Link>
+            <LogoutButton />
             <ThemeToggleInline className="md:ml-3" />
           </div>
         </div>
@@ -152,6 +147,7 @@ export default async function ProfilePage() {
                 </p>
               </div>
             ) : (
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               dbUser.notifications.map((n: any) => (
                 <div
                   key={String(n.id)}
