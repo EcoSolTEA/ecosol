@@ -3,7 +3,17 @@
 import * as React from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ShieldCheck, MessageCircle, Globe, Users, ArrowRight, Rocket, Cpu, Network, Target } from "lucide-react";
+import {
+  ShieldCheck,
+  MessageCircle,
+  Globe,
+  Users,
+  ArrowRight,
+  Rocket,
+  Cpu,
+  Network,
+  Target,
+} from "lucide-react";
 
 interface Contact {
   name: string;
@@ -18,13 +28,15 @@ interface Creator {
   icon: React.ComponentType<any>;
 }
 
+import pkg from "../package.json";
+
 const CONFIG = {
   platform: {
     name: "ECOSOL",
     description:
       "Plataforma colaborativa que conecta profissionais autistas, promovendo autonomia financeira e colaboração técnica em ambiente inclusivo.",
     copyright: `© ${new Date().getFullYear()} Ecosol • Gestão de Economia Solidária`,
-    version: "v1.1.4", // Versão de fallback (caso a API falhe)
+    version: pkg?.version ? `v${pkg.version}` : "v0.0.0", // Puxa a versão do package.json
     logo: "/ecosol-meta.png",
     termsUrl: "/terms",
     repoPath: "EcoSolTEA/ecosol", // Caminho do seu repositório

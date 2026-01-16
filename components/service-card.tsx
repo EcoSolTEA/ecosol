@@ -19,7 +19,13 @@ type Service = {
   email?: string | null;
   site?: string | null;
 };
-export default function ServiceCard({ service }: { service: Service }) {
+export default function ServiceCard({
+  service,
+  eager,
+}: {
+  service: Service;
+  eager?: boolean;
+}) {
   return (
     <Card className="flex flex-col h-full border-border hover:border-primary/40 transition-all duration-300 p-3.5 shadow-sm group">
       {/* Imagem */}
@@ -29,6 +35,7 @@ export default function ServiceCard({ service }: { service: Service }) {
           alt={service.name}
           fill
           sizes="(max-width: 640px) 100vw, 50vw"
+          loading={eager ? "eager" : undefined}
           className="object-cover group-hover:scale-105 transition-transform duration-500"
         />
       </div>

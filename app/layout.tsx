@@ -4,6 +4,8 @@ import { ThemeProvider } from "@/components/theme-provider";
 import Footer from "@/components/footer";
 import "./globals.css";
 import "./globals-sw.css";
+import RegisterSW from "@/components/register-sw";
+import PWAInstall from "@/components/pwa-install";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,7 +18,10 @@ const geistMono = Geist_Mono({
 });
 
 // Detecta a URL base usando suas variáveis existentes
-const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXTAUTH_URL || "http://localhost:3000";
+const baseUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  process.env.NEXTAUTH_URL ||
+  "http://localhost:3000";
 
 export const metadata: Metadata = {
   // Define a base para resolver imagens de redes sociais
@@ -43,7 +48,9 @@ export const metadata: Metadata = {
     "TDAH",
     "AH/SD",
   ],
-  authors: [{ name: "ECOSOL Autista", url: "https://www.ecosolautista.com.br" }],
+  authors: [
+    { name: "ECOSOL Autista", url: "https://www.ecosolautista.com.br" },
+  ],
   creator: "ECOSOL Autista",
   publisher: "ECOSOL Autista",
   formatDetection: {
@@ -95,17 +102,26 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
+      <head>
+        <link rel="manifest" href="/api/manifest" />
+        <meta name="theme-color" content="#ffffff" />
+        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground transition-colors duration-300`}
       >
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={true}>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="light"
+          enableSystem={true}
+        >
           <div className="flex flex-col min-h-screen">
-            <main className="flex-1">
-              {children}
-            </main>
+            <main className="flex-1">{children}</main>
             <Footer />
           </div>
         </ThemeProvider>
+        <RegisterSW />
+        <PWAInstall />
       </body>
     </html>
   );

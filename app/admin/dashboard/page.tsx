@@ -59,11 +59,11 @@ export default function AdminDashboard() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-10 gap-6">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-primary/10 rounded-2xl text-primary">
-              <LayoutDashboard size={32} />
+              <LayoutDashboard size={28} />
             </div>
             <div>
-              <h2 className="text-4xl font-black tracking-tighter text-foreground uppercase">Painel Admin</h2>
-              <p className="text-muted-foreground font-medium">Controle de qualidade e curadoria Ecosol.</p>
+              <h2 className="text-2xl font-black tracking-tighter text-foreground uppercase">Painel Administrativo</h2>
+              <p className="text-muted-foreground font-medium">Controle de qualidade e curadoria.</p>
             </div>
           </div>
           
