@@ -12,6 +12,7 @@ import {
   Bell,
   LogOut,
   User as UserIcon,
+  Home,
   LayoutDashboard,
   PlusCircle,
   ChevronDown,
@@ -152,11 +153,17 @@ export default function Header() {
 
   const hasUnread = notifications.some((n: ModalNotification) => !n.read);
 
-  if (!mounted) return <div className="h-14 w-full border-b bg-background" />;
+  if (!mounted)
+    return (
+      <>
+        <div className="hidden md:block h-14 w-full border-b bg-background" />
+        <div className="md:hidden h-14 w-full bg-card border-t border-border" />
+      </>
+    );
 
   return (
     <>
-      <header className="w-full border-b bg-background sticky top-0 z-40 border-border shadow-sm h-14 transition-colors">
+      <header className="hidden md:block w-full border-b bg-background sticky top-0 z-40 border-border shadow-sm h-14 transition-colors">
         <div className="mx-auto max-w-6xl h-full flex items-center justify-between px-3 sm:px-4">
           {/* LOGO AREA */}
           <Link href="/" className="flex items-center gap-2 group shrink-0">
@@ -337,6 +344,51 @@ export default function Header() {
           </nav>
         </div>
       </header>
+
+      {/* Bottom navigation for mobile devices */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 border-t bg-card z-40 h-14">
+        <div className="mx-auto max-w-6xl h-full flex items-center justify-between px-4">
+          <Link
+            href="/"
+            className="flex flex-col items-center justify-center text-xs text-muted-foreground"
+          >
+            <Home className="h-6 w-6" />
+            <span className="text-[11px]">Início</span>
+          </Link>
+
+          <Link
+            href="/submit"
+            className="flex flex-col items-center justify-center text-xs text-muted-foreground"
+          >
+            <PlusCircle className="h-6 w-6" />
+            <span className="text-[11px]">Negócio</span>
+          </Link>
+
+          <button
+            onClick={() => setIsModalOpen(true)}
+            aria-label="Notificações"
+            className="relative flex flex-col items-center justify-center text-xs text-muted-foreground"
+          >
+            <Bell className="h-6 w-6" />
+            {hasUnread && (
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-primary rounded-full border-2 border-background animate-pulse"></span>
+            )}
+            <span className="text-[11px]">Notificações</span>
+          </button>
+
+          {/* theme toggle removed from bottom bar (handled in profile/settings) */}
+
+          <Link
+            href="/profile"
+            className="flex flex-col items-center justify-center text-xs text-muted-foreground"
+          >
+            <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-black uppercase shadow-inner">
+              {user?.email?.[0]}
+            </div>
+            <span className="text-[11px]">Perfil</span>
+          </Link>
+        </div>
+      </nav>
 
       <NotificationModal
         isOpen={isModalOpen}
