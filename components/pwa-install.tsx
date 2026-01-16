@@ -3,16 +3,20 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform?: string }>;
+}
 
 export default function PWAInstall() {
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [visible, setVisible] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [, setVisible] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [installed, setInstalled] = useState(false);
   const [showFallbackInfo, setShowFallbackInfo] = useState(false);
 
   useEffect(() => {
-    function onBeforeInstallPrompt(e: Event) {
+    function onBeforeInstallPrompt(e: BeforeInstallPromptEvent) {
       e.preventDefault();
       // save the event for later
       setDeferredPrompt(e);
@@ -52,8 +56,8 @@ export default function PWAInstall() {
   async function handleInstallClick() {
     if (deferredPrompt) {
       try {
-        (deferredPrompt as any).prompt();
-        const choiceResult = await (deferredPrompt as any).userChoice;
+        await deferredPrompt.prompt();
+        const choiceResult = await deferredPrompt.userChoice;
         console.log("userChoice", choiceResult);
         setDeferredPrompt(null);
         setShowFallbackInfo(false);
@@ -78,9 +82,9 @@ export default function PWAInstall() {
       <button
         onClick={handleInstallClick}
         aria-label="Instalar ECOSOL"
-        className="flex items-center gap-3 bg-primary/10 text-primary border border-primary/20 px-3 py-2 rounded-2xl shadow-sm hover:shadow-md active:scale-95 transition-transform"
+        className="flex items-center gap-3 bg-primary text-primary-foreground border border-primary px-3 py-2 rounded-2xl shadow-sm hover:shadow-md active:scale-95 transition-transform"
       >
-        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/20 overflow-hidden">
+        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary text-primary-foreground overflow-hidden">
           <Image
             src="/ecosol-meta.png"
             alt="Ecosol"
@@ -93,8 +97,8 @@ export default function PWAInstall() {
       </button>
       {showFallbackInfo && (
         <div className="mt-2 w-56 p-2 bg-card border border-border rounded-md text-xs text-muted-foreground shadow-md">
-          Toque no menu do navegador e escolha "Instalar" ou "Adicionar à tela
-          inicial".
+          Toque no menu do navegador e escolha Instalar&quot; ou Adicionar à tela
+          inicial&quot;.
         </div>
       )}
     </div>

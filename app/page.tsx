@@ -32,7 +32,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
      * Utilizamos ORDER BY RANDOM() para que o PostgreSQL embaralhe os resultados
      * antes de nos entregar os 12 primeiros.
      */
-    prisma.$queryRaw<any[]>`
+    prisma.$queryRaw<unknown[]>`
       SELECT * FROM "Service"
       WHERE approved = true 
         AND suspended = false 
@@ -47,7 +47,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
    */
   const categoriesWithCounts = [
     { name: "Todas", count: total },
-    ...counts.map((c: { category: any; _count: { category: any; }; }) => ({ name: c.category, count: c._count.category }))
+    ...counts.map((c: { category: unknown; _count: { category: unknown; }; }) => ({ name: c.category, count: c._count.category }))
   ];
 
   return (

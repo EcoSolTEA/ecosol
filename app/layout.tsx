@@ -104,8 +104,53 @@ export default function RootLayout({
     <html lang="pt-BR" suppressHydrationWarning>
       <head>
         <link rel="manifest" href="/api/manifest" />
-        <meta name="theme-color" content="#ffffff" />
+        <meta name="theme-color" data-dynamic />
+        <meta
+          name="theme-color"
+          media="(prefers-color-scheme: light)"
+          content="#fafafa"
+        />
+        <meta
+          name="theme-color"
+          media="(prefers-color-scheme: dark)"
+          content="#0b1220"
+        />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){
+  function rgbToHex(rgb){
+    var m = rgb && rgb.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
+    if(!m) return null;
+    return '#'+[1,2,3].map(function(i){return parseInt(m[i]).toString(16).padStart(2,'0')}).join('');
+  }
+  function updateThemeColor(){
+    try{
+      var el = document.createElement('div');
+      el.style.color = 'hsl(var(--background))';
+      el.style.display = 'none';
+      document.documentElement.appendChild(el);
+      var rgb = getComputedStyle(el).color;
+      document.documentElement.removeChild(el);
+      var hex = rgbToHex(rgb) || '#ffffff';
+      var meta = document.querySelector('meta[name="theme-color"][data-dynamic]');
+      if(!meta){ meta = document.createElement('meta'); meta.setAttribute('name','theme-color'); meta.setAttribute('data-dynamic','true'); document.head.appendChild(meta); }
+      meta.setAttribute('content', hex);
+    }catch(e){/* ignore */}
+  }
+  updateThemeColor();
+  new MutationObserver(function(mutations){
+    for(var i=0;i<mutations.length;i++){
+      var m = mutations[i];
+      if(m.type==='attributes' && m.attributeName==='class'){
+        updateThemeColor();
+        break;
+      }
+    }
+  }).observe(document.documentElement, { attributes: true });
+})();`,
+          }}
+        />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground transition-colors duration-300`}

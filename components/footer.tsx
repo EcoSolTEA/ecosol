@@ -3,6 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import {
   ShieldCheck,
   MessageCircle,
@@ -25,7 +26,9 @@ interface Creator {
   name: string;
   role: string;
   url: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<
+    React.SVGProps<SVGSVGElement> & { size?: number }
+  >;
 }
 
 import pkg from "../package.json";
@@ -259,12 +262,18 @@ function TwitterIcon({ size = 13 }: { size?: number }) {
 
 export default function Footer() {
   const [mounted, setMounted] = React.useState(false);
+  const [isMobile, setIsMobile] = React.useState(false);
   const [currentVersion, setCurrentVersion] = React.useState(
     CONFIG.platform.version
   );
 
   React.useEffect(() => {
     setMounted(true);
+
+    const mm = window.matchMedia("(max-width: 767px)");
+    const setMatch = () => setIsMobile(mm.matches);
+    setMatch();
+    mm.addEventListener?.("change", setMatch);
 
     const fetchVersion = async () => {
       try {
@@ -296,9 +305,15 @@ export default function Footer() {
     };
 
     fetchVersion();
+    return () => mm.removeEventListener?.("change", setMatch);
   }, []);
 
+  const pathname = usePathname();
+
   if (!mounted) return null;
+
+  // On mobile devices, show footer only on profile routes
+  if (isMobile && !(pathname || "").startsWith("/profile")) return null;
 
   const { platform, contacts, team, social, waMessage } = CONFIG;
 
