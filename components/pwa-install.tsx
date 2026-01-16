@@ -9,7 +9,8 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 export default function PWAInstall() {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [deferredPrompt, setDeferredPrompt] =
+    useState<BeforeInstallPromptEvent | null>(null);
   const [, setVisible] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [installed, setInstalled] = useState(false);
@@ -78,13 +79,13 @@ export default function PWAInstall() {
   if (!isMobile || installed) return null;
 
   return (
-    <div className="fixed right-4 bottom-4 z-50 md:hidden">
+    <div className="fixed right-4 bottom-20 z-50 md:hidden">
       <button
         onClick={handleInstallClick}
         aria-label="Instalar ECOSOL"
-        className="flex items-center gap-3 bg-primary text-primary-foreground border border-primary px-3 py-2 rounded-2xl shadow-sm hover:shadow-md active:scale-95 transition-transform"
+        className="flex items-center gap-3 bg-[#fafafa] text-primary border border-primary px-3 py-2 rounded-2xl shadow-sm hover:shadow-md active:scale-95 transition-transform"
       >
-        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary text-primary-foreground overflow-hidden">
+        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[#fafafa] text-primary overflow-hidden">
           <Image
             src="/ecosol-meta.png"
             alt="Ecosol"
@@ -97,8 +98,8 @@ export default function PWAInstall() {
       </button>
       {showFallbackInfo && (
         <div className="mt-2 w-56 p-2 bg-card border border-border rounded-md text-xs text-muted-foreground shadow-md">
-          Toque no menu do navegador e escolha Instalar&quot; ou Adicionar à tela
-          inicial&quot;.
+          Toque no menu do navegador e escolha Instalar&quot; ou Adicionar à
+          tela inicial&quot;.
         </div>
       )}
     </div>
