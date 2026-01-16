@@ -153,6 +153,11 @@ export default function Header() {
     window.location.href = "/";
   };
 
+  const pathname = usePathname() || "/";
+  const base = "flex flex-col items-center justify-center text-xs p-1";
+  const inactive = "text-muted-foreground";
+  const active = "text-primary";
+
   const hasUnread = notifications.some((n: ModalNotification) => !n.read);
 
   if (!mounted)
@@ -351,90 +356,80 @@ export default function Header() {
       <nav className="md:hidden fixed bottom-0 left-0 right-0 border-t bg-card z-40 h-14">
         <div className="mx-auto max-w-6xl h-full flex items-center justify-between px-4">
           {/* usePathname is a hook, call inside component render */}
-          {(() => {
-            const pathname = usePathname() || "/";
-            const base =
-              "flex flex-col items-center justify-center text-xs p-1";
-            const inactive = "text-muted-foreground";
-            const active = "text-primary";
+          <>
+            <Link
+              href="/"
+              className={cn(base, pathname === "/" ? active : inactive)}
+            >
+              <Home className="h-6 w-6" />
+              <span className="text-[11px]">Início</span>
+            </Link>
 
-            return (
-              <>
-                <Link
-                  href="/"
-                  className={cn(base, pathname === "/" ? active : inactive)}
-                >
-                  <Home className="h-6 w-6" />
-                  <span className="text-[11px]">Início</span>
-                </Link>
+            <Link
+              href="/submit"
+              className={cn(
+                base,
+                pathname === "/submit" ? active : inactive
+              )}
+            >
+              <PlusCircle className="h-6 w-6" />
+              <span className="text-[11px]">Negócio</span>
+            </Link>
 
-                <Link
-                  href="/submit"
-                  className={cn(
-                    base,
-                    pathname === "/submit" ? active : inactive
-                  )}
-                >
-                  <PlusCircle className="h-6 w-6" />
-                  <span className="text-[11px]">Negócio</span>
-                </Link>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              aria-label="Notificações"
+              className={cn(
+                base,
+                isModalOpen ? active : inactive,
+                "relative"
+              )}
+            >
+              <Bell className="h-6 w-6" />
+              {hasUnread && (
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-primary rounded-full border-2 border-background animate-pulse"></span>
+              )}
+              <span className="text-[11px]">Notificações</span>
+            </button>
 
-                <button
-                  onClick={() => setIsModalOpen(true)}
-                  aria-label="Notificações"
-                  className={cn(
-                    base,
-                    isModalOpen ? active : inactive,
-                    "relative"
-                  )}
-                >
-                  <Bell className="h-6 w-6" />
-                  {hasUnread && (
-                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-primary rounded-full border-2 border-background animate-pulse"></span>
-                  )}
-                  <span className="text-[11px]">Notificações</span>
-                </button>
-
-                {role === "ADMIN" && (
-                  <Link
-                    href="/admin/dashboard"
-                    className={cn(
-                      base,
-                      pathname.startsWith("/admin") ? active : inactive,
-                      "relative"
-                    )}
-                  >
-                    <LayoutDashboard className="h-6 w-6" />
-                    <span className="text-[11px]">Admin</span>
-                    {pendingCount > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-destructive text-white text-[10px] font-black h-4 min-w-[18px] px-1 rounded-full flex items-center justify-center">
-                        {isLoadingCount ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : pendingCount > 99 ? (
-                          "99+"
-                        ) : (
-                          pendingCount
-                        )}
-                      </span>
-                    )}
-                  </Link>
+            {role === "ADMIN" && (
+              <Link
+                href="/admin/dashboard"
+                className={cn(
+                  base,
+                  pathname.startsWith("/admin") ? active : inactive,
+                  "relative"
                 )}
+              >
+                <LayoutDashboard className="h-6 w-6" />
+                <span className="text-[11px]">Admin</span>
+                {pendingCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-destructive text-white text-[10px] font-black h-4 min-w-4.5 px-1 rounded-full flex items-center justify-center">
+                    {isLoadingCount ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : pendingCount > 99 ? (
+                      "99+"
+                    ) : (
+                      pendingCount
+                    )}
+                  </span>
+                )}
+              </Link>
+            )}
 
-                <Link
-                  href="/profile"
-                  className={cn(
-                    base,
-                    pathname.startsWith("/profile") ? active : inactive
-                  )}
-                >
-                  <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-black uppercase shadow-inner">
-                    {user?.email?.[0]}
-                  </div>
-                  <span className="text-[11px]">Perfil</span>
-                </Link>
-              </>
-            );
-          })()}
+            <Link
+              href="/profile"
+              className={cn(
+                base,
+                pathname.startsWith("/profile") ? active : inactive
+              )}
+            >
+              <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-black uppercase shadow-inner">
+                {user?.email?.[0]}
+              </div>
+              <span className="text-[11px]">Perfil</span>
+            </Link>
+          </>
         </div>
       </nav>
 
