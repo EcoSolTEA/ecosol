@@ -4,6 +4,7 @@ import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import SearchBar from "./search-bar";
 import ServiceCard from "./service-card";
+import ServiceCardImage from "./service-card-image";
 import CategoryFilter from "./category-filter";
 import ServiceSkeleton from "./service-skeleton";
 // Use a lightweight client-side type for services to avoid importing server-only Prisma types
@@ -20,7 +21,7 @@ type ServiceItem = {
   email?: string | null;
   approved?: boolean;
   suspended?: boolean;
-  [key: string]: any;
+  [key: string]: unknown;
 };
 import { Carousel } from "@/components/ui/carousel";
 
@@ -29,7 +30,7 @@ interface CategoryData {
   count: number;
 }
 
-const shuffleArray = (array: any[]) => {
+const shuffleArray = <T,>(array: T[]): T[] => {
   const newArray = [...array];
   for (let i = newArray.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -65,11 +66,12 @@ export default function LiveSearchContainer({
 
   const hasEnoughServicesForCarousel = React.useMemo(() => {
     const isSearchActive = searchTerm !== "" || selectedCategory !== "Todas";
-    return (
-      services.length >= SERVICES_TO_SHOW_IN_CAROUSEL &&
-      !isSearchActive &&
-      !isSearching
-    );
+    // Detect mobile to relax the minimum required services for the carousel
+    const isClient = typeof window !== "undefined";
+    const isMobileView = isClient ? window.innerWidth < 768 : false;
+    const threshold = isMobileView ? 1 : SERVICES_TO_SHOW_IN_CAROUSEL;
+
+    return services.length >= threshold && !isSearchActive && !isSearching;
   }, [services.length, isSearching, searchTerm, selectedCategory]);
 
   React.useEffect(() => {
@@ -162,8 +164,14 @@ export default function LiveSearchContainer({
             setServices(sortedServerData);
             lastUpdateIds.current = serverIds;
           }
-        } catch (err: any) {
-          if (err.name !== "AbortError") {
+        } catch (err: unknown) {
+          // Safely check for an AbortError without assuming the type of `err`
+          const name =
+            typeof err === "object" && err !== null && "name" in err
+              ? (err as { name?: unknown }).name
+              : undefined;
+          const isAbort = typeof name === "string" && name === "AbortError";
+          if (!isAbort) {
             console.error("Erro na busca remota:", err);
             setSearchError("Não foi possível sincronizar os dados.");
           }
@@ -221,7 +229,7 @@ export default function LiveSearchContainer({
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="mt-6 mb-8 overflow-hidden"
+            className="mt-0 mb-0 overflow-hidden"
           >
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-foreground">Destaques</h2>
@@ -231,7 +239,10 @@ export default function LiveSearchContainer({
             </div>
             <Carousel>
               {carouselServices.map((service) => (
-                <ServiceCard key={`carousel-${service.id}`} service={service} />
+                <ServiceCardImage
+                  key={`carousel-${service.id}`}
+                  service={service}
+                />
               ))}
             </Carousel>
           </motion.div>
