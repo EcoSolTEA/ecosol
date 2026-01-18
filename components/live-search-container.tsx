@@ -223,7 +223,7 @@ export default function LiveSearchContainer({
         />
       </div>
 
-      <AnimatePresence>
+      {/* <AnimatePresence>
         {hasEnoughServicesForCarousel && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
@@ -237,17 +237,17 @@ export default function LiveSearchContainer({
                 {carouselServices.length} serviços em destaque
               </span>
             </div>
-            {/* <Carousel>
+            <Carousel>
               {carouselServices.map((service) => (
                 <ServiceCardImage
                   key={`carousel-${service.id}`}
                   service={service}
                 />
               ))}
-            </Carousel> */}
+            </Carousel>
           </motion.div>
         )}
-      </AnimatePresence>
+      </AnimatePresence> */}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 mt-4 relative">
         <AnimatePresence mode="popLayout" initial={false}>
