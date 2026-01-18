@@ -12,48 +12,53 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+// Template Base atualizado para combinar com o padrão Supabase
+const emailWrapper = (content: string) => `
+  <div style="background-color: #f7f7f7; padding: 40px 20px; font-family: sans-serif; text-align: center;">
+    <div style="max-width: 500px; background-color: #ffffff; margin: 0 auto; padding: 40px; border-radius: 40px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+      <img src="https://ecosolautista.com.br/ecosol-meta.png" alt="EcoSolTEA" style="height: 50px; margin-bottom: 20px;">
+      ${content}
+      <div style="margin-top: 35px; padding-top: 20px; border-top: 1px solid #f1f5f9;">
+        <p style="color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">Economia Solidária Entre Autistas</p>
+      </div>
+    </div>
+  </div>
+`;
+
 export async function POST(req: Request) {
-  // 1. CORREÇÃO VITAL: await cookies() para Next.js moderno (2025/2026)
-  const cookieStore = await cookies()
+  const cookieStore = await cookies();
   
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() {
-          // Agora o TS reconhece o getAll() pois o cookieStore foi "aguardado"
-          return cookieStore.getAll()
-        },
+        getAll() { return cookieStore.getAll() },
         setAll(cookiesToSet) {
           try {
             cookiesToSet.forEach(({ name, value, options }) =>
-              // Versão compatível com Next.js moderno
               cookieStore.set({ name, value, ...options })
             )
-          } catch (error) {
-            console.error(error);
-          }
+          } catch (error) { console.error(error); }
         },
       },
     }
-  )
+  );
 
   try {
-    // 2. VERIFICAÇÃO DE SEGURANÇA
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
       return NextResponse.json(
-        { ok: false, error: "Acesso não autorizado. Faça login para continuar." },
+        { ok: false, error: "Acesso não autorizado." },
         { status: 401 }
-      )
+      );
     }
 
     const body = await req.json();
-    const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://ecosol-omega.vercel.app";
+    const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://ecosolautista.com.br";
 
-    // 3. REGISTRO NO PRISMA (Usando o e-mail autenticado do Supabase)
+    // 1. Registro no Prisma
     const created = await prisma.service.create({ 
       data: { 
         ...body, 
@@ -63,70 +68,89 @@ export async function POST(req: Request) {
     });
 
     if (created.id) {
-      // 4. LOGÍSTICA DE NOTIFICAÇÃO (ADM)
+      // 2. Busca Admins com Nome e Email
       const admins = await prisma.user.findMany({
         where: { role: 'ADMIN' },
-        select: { email: true }
+        select: { email: true, name: true }
       });
 
       const emailPromises = [];
 
+      // 3. Template para os Admins - Atualizado para combinar com padrão Supabase
       if (admins && admins.length > 0) {
-        admins.forEach((admin: { email: any; }) => {
-          if (!admin.email) return;
+        admins.forEach((admin: { email: string | null; name: string | null }) => {          if (!admin.email) return;
           emailPromises.push(
             transporter.sendMail({
-              from: `"Sistema Ecosol" <${process.env.GMAIL_USER}>`,
+              from: `"EcoSol" <${process.env.GMAIL_USER}>`,
               to: admin.email,
-              subject: 'Nova Aprovação Pendente - Ecosol',
-              html: `
-                <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 20px; padding: 30px;">
-                  <h2 style="color: #0f172a; font-weight: 900;">Olá Admin!</h2>
-                  <p style="color: #475569; line-height: 1.6;">
-                    Existe um novo negócio aguardando sua revisão: <strong>${body.name}</strong>.
-                  </p>
-                  <div style="margin-top: 25px;">
-                    <a href="${SITE_URL}/admin/dashboard" 
-                       style="background: #2563eb; color: white; padding: 12px 24px; border-radius: 10px; text-decoration: none; display: inline-block; font-weight: bold;">
-                       Acessar Painel Administrativo
-                    </a>
-                  </div>
-                </div>
-              `
+              subject: '🚀 Nova Aprovação Pendente - EcoSol',
+              html: emailWrapper(`
+                <h2 style="color: #0f172a; text-transform: uppercase; letter-spacing: -1px; font-size: 24px; margin-bottom: 10px;">Nova Submissão</h2>
+                <p style="color: #475569; font-size: 16px; line-height: 1.5; margin-bottom: 20px;">
+                  Olá, <strong>${admin.name || 'Administrador'}</strong>!<br>
+                  Existe um novo negócio aguardando sua revisão na plataforma:
+                  <br>
+                  <strong style="color: #3b82f6; font-size: 18px;">${body.name}</strong>
+                </p>
+                <p style="color: #64748b; font-size: 14px; line-height: 1.5; margin-bottom: 30px;">
+                  Por favor, revise o cadastro o mais breve possível.
+                </p>
+                <a href="${SITE_URL}/admin/dashboard" 
+                   style="display: inline-block; margin-top: 20px; background-color: #3b82f6; color: #ffffff; padding: 15px 30px; border-radius: 15px; text-decoration: none; font-weight: bold; text-transform: uppercase; font-size: 14px; letter-spacing: 1px;">
+                   Revisar Cadastro
+                </a>
+                <p style="margin-top: 30px; color: #94a3b8; font-size: 12px;">
+                  Esta é uma notificação automática do sistema EcoSol.
+                </p>
+              `)
             })
           );
         });
       }
 
-      // 5. NOTIFICAÇÃO PARA O OWNER (USUÁRIO LOGADO)
+      // 4. Template para o Usuário (Owner) - Atualizado para combinar com padrão Supabase
       if (user.email) {
         emailPromises.push(
           transporter.sendMail({
-            from: `"Ecosol" <${process.env.GMAIL_USER}>`,
+            from: `"EcoSol" <${process.env.GMAIL_USER}>`,
             to: user.email,
-            subject: '🌿 Recebemos seu cadastro - Ecosol',
-            html: `
-              <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 20px; padding: 30px;">
-                <h2 style="color: #2563eb; font-weight: 900;">Submissão Recebida!</h2>
-                <p style="color: #475569; line-height: 1.6;">
-                  Obrigado por cadastrar o negócio <strong>${body.name}</strong>. 
-                  Sua publicação entrará em fase de curadoria e você será avisado por aqui assim que for aprovada.
+            subject: '🌿 Recebemos seu cadastro - EcoSol',
+            html: emailWrapper(`
+              <h2 style="color: #0f172a; text-transform: uppercase; letter-spacing: -1px; font-size: 24px; margin-bottom: 10px;">Submissão Recebida!</h2>
+              <p style="color: #475569; font-size: 16px; line-height: 1.5; margin-bottom: 20px;">
+                Olá! Obrigado por cadastrar o negócio <strong>${body.name}</strong> na rede <strong>ECOSOL</strong>.
+              </p>
+              <p style="color: #475569; font-size: 16px; line-height: 1.5; margin-bottom: 30px;">
+                Sua publicação agora passará por nossa curadoria técnica. Você receberá uma nova notificação assim que o perfil for aprovado e estiver visível para a comunidade.
+              </p>
+              <div style="background-color: #f1f5f9; padding: 20px; border-radius: 10px; margin: 25px 0;">
+                <p style="color: #475569; font-size: 14px; margin: 0;">
+                  <strong>📋 Dados recebidos:</strong><br>
+                  Nome: ${body.name}<br>
+                  Categoria: ${body.category}<br>
+                  Data: ${new Date().toLocaleDateString('pt-BR')}
                 </p>
-                <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
-                <p style="font-size: 12px; color: #94a3b8; text-align: center;">Equipe Ecosol Entre Autistas</p>
               </div>
-            `
+              <p style="color: #64748b; font-size: 14px; line-height: 1.5;">
+                Tempo estimado para revisão: 1-3 dias úteis.
+              </p>
+            `)
           })
         );
       }
 
-      // Envia todos os e-mails simultaneamente
-      await Promise.all(emailPromises);
+      // 5. ENVIO NÃO-BLOQUEANTE
+      Promise.all(emailPromises).catch(err => {
+        console.error("Erro no envio de e-mails (mas o dado foi salvo):", err.message);
+      });
     }
 
     return NextResponse.json({ ok: true, id: created.id });
   } catch (err) {
     console.error("Erro crítico na submissão:", err);
-    return NextResponse.json({ ok: false }, { status: 500 });
+    return NextResponse.json(
+      { ok: false, error: "Erro interno do servidor" },
+      { status: 500 }
+    );
   }
 }

@@ -23,7 +23,7 @@ type ServiceItem = {
   suspended?: boolean;
   [key: string]: unknown;
 };
-import { Carousel } from "@/components/ui/carousel";
+// import { Carousel } from "@/components/ui/carousel";
 
 interface CategoryData {
   name: string;
@@ -237,14 +237,14 @@ export default function LiveSearchContainer({
                 {carouselServices.length} serviços em destaque
               </span>
             </div>
-            <Carousel>
+            {/* <Carousel>
               {carouselServices.map((service) => (
                 <ServiceCardImage
                   key={`carousel-${service.id}`}
                   service={service}
                 />
               ))}
-            </Carousel>
+            </Carousel> */}
           </motion.div>
         )}
       </AnimatePresence>
