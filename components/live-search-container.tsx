@@ -1,4 +1,4 @@
-// components/live-search-container.tsx (versão simplificada)
+// components/live-search-container.tsx
 "use client";
 
 import * as React from "react";
@@ -54,28 +54,31 @@ export default function LiveSearchContainer({
   const [isInitialPageLoad, setIsInitialPageLoad] = React.useState(true);
   const [searchError, setSearchError] = React.useState<string | null>(null);
   const [currentPage, setCurrentPage] = React.useState(1);
-  const [itemsPerPage, setItemsPerPage] = React.useState(5);
 
   const lastUpdateIds = React.useRef<string>("");
   const abortControllerRef = React.useRef<AbortController | null>(null);
 
   // Calcular itens por página responsivamente
+  const getItemsPerPage = () => {
+    if (typeof window === 'undefined') return 6;
+    
+    const width = window.innerWidth;
+    if (width < 640) return 6;    // 2 colunas × 3 linhas
+    if (width < 1024) return 8;   // 2 colunas × 4 linhas
+    return 12;                    // 3 colunas × 4 linhas
+  };
+
+  const [itemsPerPage, setItemsPerPage] = React.useState(getItemsPerPage());
+
+  // Atualizar itemsPerPage no resize
   React.useEffect(() => {
-    const updateItemsPerPage = () => {
-      const width = window.innerWidth;
-      if (width < 640) {
-        setItemsPerPage(5);
-      } else if (width < 1024) {
-        setItemsPerPage(8);
-      } else {
-        setItemsPerPage(12);
-      }
-      setCurrentPage(1); // Resetar para primeira página ao redimensionar
+    const handleResize = () => {
+      setItemsPerPage(getItemsPerPage());
+      setCurrentPage(1);
     };
 
-    updateItemsPerPage();
-    window.addEventListener("resize", updateItemsPerPage);
-    return () => window.removeEventListener("resize", updateItemsPerPage);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   // Inicialização
@@ -96,7 +99,7 @@ export default function LiveSearchContainer({
     setCurrentPage(1);
   }, [searchTerm, selectedCategory]);
 
-  // Busca e filtragem (mantido igual)
+  // Busca e filtragem
   React.useEffect(() => {
     const performUpdate = async () => {
       if (abortControllerRef.current) {
@@ -211,13 +214,14 @@ export default function LiveSearchContainer({
     };
   }, [searchTerm, selectedCategory, masterOrder]);
 
-  // Cálculos finais
+  // Cálculos de paginação - SIMPLES e DIRETO
   const totalItems = services.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
   const paginatedServices = services.slice(startIndex, endIndex);
 
+  // Ajustar página atual se necessário
   React.useEffect(() => {
     if (currentPage > totalPages && totalPages > 0) {
       setCurrentPage(totalPages);
@@ -227,20 +231,20 @@ export default function LiveSearchContainer({
   return (
     <div className="w-full flex flex-col transition-colors duration-300">
       {/* Header */}
-      <section className="flex flex-col items-center py-2 gap-3">
+      <section className="flex flex-col items-center py-3 gap-3">
         <div className="text-center space-y-0">
-          <h1 className="text-2xl font-bold text-foreground tracking-tighter uppercase leading-none">
+          <h1 className="text-2xl font-bold text-foreground tracking-tighter uppercase leading-tight">
             Economia Solidária
-            <p className="text-primary text-xl"> Entre Autistas</p>
+            <p className="text-primary text-xl leading-tight">Entre Autistas</p>
           </h1>
         </div>
-        <div className="w-full max-w-md">
+        <div className="w-full max-w-md px-4">
           <SearchBar onSearch={setSearchTerm} />
         </div>
       </section>
 
       {/* Filtro de categorias */}
-      <div className="py-1 border-b border-border mb-0">
+      <div className="py-2 border-b border-border">
         <CategoryFilter
           categories={categories}
           activeCategory={selectedCategory}
@@ -248,19 +252,8 @@ export default function LiveSearchContainer({
         />
       </div>
 
-      {/* Contador de resultados
-      {!isInitialPageLoad && (
-        <div className="flex items-center justify-between py-4 px-2">
-          <div className="text-sm text-muted-foreground">
-            {totalItems} resultado{totalItems !== 1 ? 's' : ''}
-            {searchTerm && ` para "${searchTerm}"`}
-            {selectedCategory !== "Todas" && ` em "${selectedCategory}"`}
-          </div>
-        </div>
-      )} */}
-
       {/* Grid de cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mt-2 mb-8 min-h-[400px]">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 mt-3 mb-6">
         <AnimatePresence mode="popLayout" initial={false}>
           {isInitialPageLoad ? (
             Array.from({ length: itemsPerPage }).map((_, i) => (
@@ -279,7 +272,7 @@ export default function LiveSearchContainer({
               initial={{ opacity: 0, translateY: 20 }}
               animate={{ opacity: 1, translateY: 0 }}
               exit={{ opacity: 0, translateY: -20 }}
-              className="col-span-full text-center py-16 bg-card rounded-2xl md:rounded-[2.5rem] border border-dashed border-border"
+              className="col-span-full text-center py-12 bg-card rounded-xl border border-dashed border-border"
             >
               <div className="text-3xl mb-3 grayscale opacity-30">🔍</div>
               <p className="text-muted-foreground font-black text-[10px] uppercase tracking-[0.3em]">
@@ -291,10 +284,10 @@ export default function LiveSearchContainer({
               <motion.div
                 key={service.id}
                 layout="position"
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
+                transition={{ duration: 0.2 }}
               >
                 <ServiceCard service={service} />
               </motion.div>
@@ -303,19 +296,14 @@ export default function LiveSearchContainer({
         </AnimatePresence>
       </div>
 
-      {/* Paginação - agora com espaço extra no fundo para mobile */}
+      {/* Paginação - SIMPLES */}
       {totalPages > 1 && (
-        <>
-          <div className="h-16 sm:h-8" /> {/* Espaço para o sticky mobile */}
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            totalItems={totalItems}
-            itemsPerPage={itemsPerPage}
-            onPageChange={setCurrentPage}
-            isSearching={isSearching}
-          />
-        </>
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          isSearching={isSearching}
+        />
       )}
     </div>
   );
