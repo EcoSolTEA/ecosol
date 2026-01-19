@@ -21,6 +21,7 @@ import {
   Loader2,
   ShieldCheck,
   LogIn,
+  Settings,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -155,7 +156,7 @@ export default function Header() {
   };
 
   const pathname = usePathname() || "/";
-  const base = "flex flex-col items-center justify-center text-xs p-1";
+  const base = "flex flex-col items-center justify-center text-xs p-1 flex-1";
   const inactive = "text-muted-foreground";
   const active = "text-primary";
 
@@ -290,7 +291,7 @@ export default function Header() {
                         </p>
                       </div>
 
-                      {/* THEME TOGGLE */}
+                      {/* THEME TOGGLE PARA USUÁRIO LOGADO - SOLUÇÃO NO MENU */}
                       <div className="px-3 py-2 border-b border-border">
                         <div className="flex items-center justify-between bg-muted/50 p-1 rounded-xl">
                           <button
@@ -326,6 +327,15 @@ export default function Header() {
                           <UserIcon className="h-4 w-4" /> Perfil da Conta
                         </Link>
 
+                        {/* Configurações - Inclui opção de tema */}
+                        <Link
+                          href="/profile/edit"
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="flex items-center gap-3 px-3 py-2 text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-xl transition-all"
+                        >
+                          <Settings className="h-4 w-4" /> Configurações
+                        </Link>
+
                         <Link
                           href="/terms"
                           onClick={() => setIsUserMenuOpen(false)}
@@ -352,90 +362,126 @@ export default function Header() {
 
       {/* Bottom navigation for mobile devices */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 border-t bg-card z-40 h-14">
-        <div className="mx-auto max-w-6xl h-full flex items-center justify-between px-4">
-          {/* Início - sempre visível */}
-          <Link
-            href="/"
-            className={cn(base, pathname === "/" ? active : inactive)}
-          >
-            <Home className="h-6 w-6" />
-            <span className="text-[11px]">Início</span>
-          </Link>
+        <div className="mx-auto max-w-6xl h-full flex items-center justify-between px-1">
+          {/* Estado do usuário deslogado - 3 itens balanceados */}
+          {!user ? (
+            <>
+              {/* Início */}
+              <Link
+                href="/"
+                className={cn(base, pathname === "/" ? active : inactive)}
+              >
+                <Home className="h-5 w-5" />
+                <span className="text-[10px] mt-0.5">Início</span>
+              </Link>
 
-          {/* Novo Negócio - apenas para usuários logados */}
-          {user && (
-            <Link
-              href="/submit"
-              className={cn(base, pathname === "/submit" ? active : inactive)}
-            >
-              <PlusCircle className="h-6 w-6" />
-              <span className="text-[11px]">Negócio</span>
-            </Link>
-          )}
+              {/* Toggle de Tema para deslogado */}
+              <button
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                className={cn(base, inactive)}
+                aria-label="Alternar tema"
+              >
+                {theme === "dark" ? (
+                  <Sun className="h-5 w-5" />
+                ) : (
+                  <Moon className="h-5 w-5" />
+                )}
+                <span className="text-[10px] mt-0.5">Tema</span>
+              </button>
 
-          {/* Notificações - apenas para usuários logados */}
-          {user && (
-            <button
-              onClick={() => setIsModalOpen(true)}
-              aria-label="Notificações"
-              className={cn(base, isModalOpen ? active : inactive, "relative")}
-            >
-              <Bell className="h-6 w-6" />
-              {hasUnread && (
-                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-primary rounded-full border-2 border-background animate-pulse"></span>
-              )}
-              <span className="text-[11px]">Notificações</span>
-            </button>
-          )}
-
-          {/* Admin Dashboard - apenas para admin logados */}
-          {user && role === "ADMIN" && (
-            <Link
-              href="/admin/dashboard"
-              className={cn(
-                base,
-                pathname.startsWith("/admin") ? active : inactive,
-                "relative"
-              )}
-            >
-              <LayoutDashboard className="h-6 w-6" />
-              <span className="text-[11px]">Admin</span>
-              {pendingCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-destructive text-white text-[10px] font-black h-4 min-w-4.5 px-1 rounded-full flex items-center justify-center">
-                  {isLoadingCount ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                  ) : pendingCount > 99 ? (
-                    "99+"
-                  ) : (
-                    pendingCount
-                  )}
-                </span>
-              )}
-            </Link>
-          )}
-
-          {/* Perfil ou Entrar */}
-          {user ? (
-            <Link
-              href="/profile"
-              className={cn(
-                base,
-                pathname.startsWith("/profile") ? active : inactive
-              )}
-            >
-              <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-black uppercase shadow-inner">
-                {user?.email?.[0]}
-              </div>
-              <span className="text-[11px]">Perfil</span>
-            </Link>
+              {/* Entrar */}
+              <Link
+                href="/login"
+                className={cn(base, pathname === "/login" ? active : inactive)}
+              >
+                <LogIn className="h-5 w-5" />
+                <span className="text-[10px] mt-0.5">Entrar</span>
+              </Link>
+            </>
           ) : (
-            <Link
-              href="/login"
-              className={cn(base, pathname === "/login" ? active : inactive)}
-            >
-              <LogIn className="h-6 w-6" />
-              <span className="text-[11px]">Entrar</span>
-            </Link>
+            // Estado do usuário logado
+            <>
+              {/* Início - sempre visível */}
+              <Link
+                href="/"
+                className={cn(base, pathname === "/" ? active : inactive)}
+              >
+                <Home className="h-5 w-5" />
+                <span className="text-[10px] mt-0.5">Início</span>
+              </Link>
+
+              {/* Novo Negócio - apenas para usuários logados */}
+              <Link
+                href="/submit"
+                className={cn(base, pathname === "/submit" ? active : inactive)}
+              >
+                <PlusCircle className="h-5 w-5" />
+                <span className="text-[10px] mt-0.5">Negócio</span>
+              </Link>
+
+              {/* Notificações - apenas para usuários logados */}
+              <button
+                onClick={() => setIsModalOpen(true)}
+                aria-label="Notificações"
+                className={cn(
+                  base,
+                  isModalOpen ? active : inactive,
+                  "relative"
+                )}
+              >
+                <Bell className="h-5 w-5" />
+                {hasUnread && (
+                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-primary rounded-full border border-background animate-pulse"></span>
+                )}
+                <span className="text-[10px] mt-0.5">Alertas</span>
+              </button>
+
+              {/* Admin Dashboard - apenas para admin logados */}
+              {role === "ADMIN" ? (
+                <Link
+                  href="/admin/dashboard"
+                  className={cn(
+                    base,
+                    pathname.startsWith("/admin") ? active : inactive,
+                    "relative"
+                  )}
+                >
+                  <LayoutDashboard className="h-5 w-5" />
+                  <span className="text-[10px] mt-0.5">Admin</span>
+                  {pendingCount > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 bg-destructive text-white text-[8px] font-black h-3.5 min-w-3.5 px-0.5 rounded-full flex items-center justify-center">
+                      {isLoadingCount ? (
+                        <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                      ) : pendingCount > 9 ? (
+                        "9+"
+                      ) : (
+                        pendingCount
+                      )}
+                    </span>
+                  )}
+                </Link>
+              ) : (
+                // Espaço reservado para manter balanceamento quando não for admin
+                <div className={cn(base, inactive, "opacity-0")}>
+                  <div className="h-5 w-5" />
+                  <span className="text-[10px] mt-0.5">⠀</span>
+                </div>
+              )}
+
+              {/* Perfil ou Configurações */}
+              <Link
+                href="/profile"
+                className={cn(
+                  base,
+                  pathname.startsWith("/profile") ? active : inactive
+                )}
+              >
+                <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-[10px] font-black uppercase shadow-inner">
+                  {user?.email?.[0]}
+                </div>
+                <span className="text-[10px] mt-0.5">Conta</span>
+              </Link>
+            </>
           )}
         </div>
       </nav>

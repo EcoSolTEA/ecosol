@@ -8,7 +8,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createServerClient } from "@supabase/ssr";
 import NotificationActions from "@/components/notification-actions";
-import { UserCircle, Settings, Bell, Eye, MessageSquare } from "lucide-react";
+import { UserCircle, Settings, Bell, Eye, MessageSquare, ArrowLeft } from "lucide-react";
 
 export default async function ProfilePage() {
   const cookieStore = await cookies();
@@ -49,6 +49,17 @@ export default async function ProfilePage() {
     <div className="min-h-screen bg-background text-foreground transition-colors duration-300 pb-20">
       <Header />
       <main className="mx-auto max-w-5xl p-6 py-12">
+        {/* BOTÃO DE VOLTAR AO INÍCIO - ADICIONADO */}
+        <div className="mb-6">
+          <Link 
+            href="/" 
+            className="group inline-flex items-center gap-2 text-primary text-[10px] font-black uppercase tracking-widest hover:opacity-80 transition-opacity"
+          >
+            <ArrowLeft className="w-3 h-3 transition-transform group-hover:-translate-x-1" /> 
+            Voltar ao Início
+          </Link>
+        </div>
+
         {/* HEADER DO PERFIL: bg-blue-600 -> bg-primary */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6">
           <div className="flex items-center gap-5">

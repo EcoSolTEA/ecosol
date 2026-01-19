@@ -6,8 +6,8 @@ import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 import Header from "@/components/header";
 import { supabase } from "@/lib/supabase";
-import { Loader2, Save, ArrowLeft, User, Phone, FileText } from "lucide-react";
-import { showLoading, notify } from "@/lib/swal";
+import { Loader2, Save, ArrowLeft, User, Phone, FileText, Trash2 } from "lucide-react";
+import { showLoading, notify, confirmDestructiveAction } from "@/lib/swal";
 
 const formatPhoneNumber = (value: string) => {
   if (!value) return value;
@@ -23,6 +23,7 @@ export default function EditProfile() {
   const [userEmail, setUserEmail] = React.useState("");
   const [loading, setLoading] = React.useState(true);
   const [saving, setSaving] = React.useState(false);
+  const [deleting, setDeleting] = React.useState(false);
   const router = useRouter();
 
   React.useEffect(() => {
@@ -52,7 +53,7 @@ export default function EditProfile() {
     setSaving(true);
 
     // 1. Modal de Sincronização Neon (Padronizado via lib/swal)
-        showLoading('Sincronizando...', 'Atualizando seus dados na rede Ecosol.');
+    showLoading('Sincronizando...', 'Atualizando seus dados na rede Ecosol.');
 
     try {
       const res = await fetch("/api/user/profile", {
@@ -74,6 +75,53 @@ export default function EditProfile() {
       notify.error("Falha na conexão com o servidor.");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleDeleteAccount() {
+    const result = await confirmDestructiveAction(
+      "Excluir Conta Permanentemente",
+      "Esta ação não pode ser desfeita. Todos os seus dados, cadastros e histórico serão removidos do Ecosol. Deseja continuar?",
+      "Sim, Excluir Minha Conta",
+      "Cancelar"
+    );
+
+    if (result.isConfirmed) {
+      setDeleting(true);
+      
+      try {
+        showLoading('Processando...', 'Removendo sua conta do sistema Ecosol.');
+        
+        const res = await fetch("/api/user/delete-account", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          if (data.warning) {
+            notify.success("Conta removida do sistema! " + data.message);
+          } else {
+            notify.success("Conta excluída com sucesso!");
+          }
+          
+          // Deslogar e redirecionar
+          await supabase.auth.signOut();
+          
+          setTimeout(() => {
+            window.location.href = "/";
+          }, 2000);
+          
+        } else {
+          notify.error(data.error || "Erro ao excluir conta.");
+        }
+      } catch (err) {
+        console.error("Erro ao excluir conta:", err);
+        notify.error("Falha na conexão com o servidor.");
+      } finally {
+        setDeleting(false);
+      }
     }
   }
 
@@ -153,15 +201,38 @@ export default function EditProfile() {
             </div>
           </div>
 
-          <div className="pt-4">
-             <Button 
-               type="submit" 
-               className="w-full bg-primary hover:bg-primary/90 text-primary-foreground rounded-4xl h-16 font-black text-lg shadow-lg shadow-primary/20 gap-3 transition-all active:scale-[0.98]" 
-               disabled={saving}
-             >
-               {saving ? <Loader2 className="animate-spin" /> : <Save className="w-5 h-5" />}
-               {saving ? "Salvando Dados..." : "Confirmar Alterações"}
-             </Button>
+          <div className="space-y-4">
+            <Button 
+              type="submit" 
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground rounded-4xl h-16 font-black text-lg shadow-lg shadow-primary/20 gap-3 transition-all active:scale-[0.98]" 
+              disabled={saving}
+            >
+              {saving ? <Loader2 className="animate-spin" /> : <Save className="w-5 h-5" />}
+              {saving ? "Salvando Dados..." : "Confirmar Alterações"}
+            </Button>
+
+            <div className="pt-6 border-t border-border/50">
+              <h3 className="text-sm font-black text-destructive uppercase tracking-widest mb-3">
+                Zona de Risco
+              </h3>
+              <p className="text-xs text-muted-foreground mb-4">
+                Esta ação removerá permanentemente sua conta e todos os dados associados do sistema Ecosol.
+              </p>
+              <Button 
+                type="button"
+                variant="destructive"
+                onClick={handleDeleteAccount}
+                disabled={deleting}
+                className="w-full h-12 rounded-2xl font-black text-[10px] uppercase tracking-widest gap-2 shadow-lg shadow-destructive/20 hover:shadow-destructive/30 transition-all"
+              >
+                {deleting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Trash2 className="w-4 h-4" />
+                )}
+                {deleting ? "Excluindo Conta..." : "Excluir Minha Conta Permanentemente"}
+              </Button>
+            </div>
           </div>
         </form>
       </main>

@@ -5,7 +5,7 @@ import Link from "next/link";
 import Header from "@/components/header";
 import { Button } from "@/components/ui/button";
 import DashboardList from "./dashboard-list";
-import { Loader2, Trash2, LayoutDashboard } from "lucide-react";
+import { Loader2, Trash2, LayoutDashboard, ArrowLeft, Home } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 export default function AdminDashboard() {
@@ -56,6 +56,17 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-background text-foreground pb-32 transition-colors duration-300">
       <Header />
       <main className="mx-auto max-w-6xl p-6">
+        {/* BOTÃO DE VOLTAR AO INÍCIO - ADICIONADO */}
+        <div className="mb-6">
+          <Link 
+            href="/" 
+            className="group inline-flex items-center gap-2 text-primary text-[10px] font-black uppercase tracking-widest hover:opacity-80 transition-opacity"
+          >
+            <ArrowLeft className="w-3 h-3 transition-transform group-hover:-translate-x-1" /> 
+            Voltar ao Início
+          </Link>
+        </div>
+
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-10 gap-6">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-primary/10 rounded-2xl text-primary">
