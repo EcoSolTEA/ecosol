@@ -55,21 +55,21 @@ export default function LiveSearchContainer({
   const [currentPage, setCurrentPage] = React.useState(1);
   const [itemsPerPage, setItemsPerPage] = React.useState(6);
 
-  // --- TRAVAS DE ENGENHARIA PARA PRODUÇÃO (SEM QUEBRAR O LAYOUT) ---
+  // --- ENGENHARIA DE ESTABILIDADE (ZERO JUMP) ---
   const containerRef = React.useRef<HTMLDivElement>(null);
-  const [minHeight, setMinHeight] = React.useState("auto");
+  const [lockedHeight, setLockedHeight] = React.useState<string | number>("auto");
 
   const lastUpdateIds = React.useRef<string>("");
   const abortControllerRef = React.useRef<AbortController | null>(null);
 
-  // 1. Desativar restauração de scroll automática do navegador (Crucial para produção)
+  // 1. Desativar restauração de scroll automática do navegador
   React.useEffect(() => {
     if ("scrollRestoration" in history) {
       history.scrollRestoration = "manual";
     }
   }, []);
 
-  // Calcular itens por página responsivamente - MANTIDO ORIGINAL
+  // Calcular itens por página responsivamente
   React.useEffect(() => {
     const updateItemsPerPage = () => {
       const width = window.innerWidth;
@@ -92,7 +92,7 @@ export default function LiveSearchContainer({
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Inicialização - Shuffle original mantido
+  // Inicialização
   React.useEffect(() => {
     const shuffled = shuffleArray(initialServices);
     setMasterOrder(shuffled);
@@ -105,16 +105,16 @@ export default function LiveSearchContainer({
     return () => clearTimeout(timer);
   }, [initialServices]);
 
-  // Função handlePageChange personalizada para travar a altura sem esticar cards
+  // Função handlePageChange: Trava a altura antes de mudar o estado
   const handlePageChange = (page: number) => {
     if (containerRef.current) {
-      // Travamos a altura exata do container para o rodapé não subir
-      setMinHeight(`${containerRef.current.offsetHeight}px`);
+      // Captura a altura exata do momento para evitar que o rodapé suba
+      setLockedHeight(containerRef.current.offsetHeight);
     }
     setCurrentPage(page);
     
-    // Resetamos a trava após a animação de entrada (ajuste fino)
-    setTimeout(() => setMinHeight("auto"), 400);
+    // Libera a altura após a animação de entrada completar (aprox 400ms)
+    setTimeout(() => setLockedHeight("auto"), 500);
   };
 
   // Resetar página quando busca/filtro mudar
@@ -124,7 +124,7 @@ export default function LiveSearchContainer({
     }
   }, [searchTerm, selectedCategory, isInitialPageLoad]);
 
-  // Busca e filtragem - Lógica completa restaurada
+  // Busca e filtragem (Lógica Original de 300+ linhas preservada)
   React.useEffect(() => {
     const performUpdate = async () => {
       if (abortControllerRef.current) {
@@ -278,12 +278,12 @@ export default function LiveSearchContainer({
         />
       </div>
 
-      {/* Grid de cards - CORREÇÃO: O motion.div agora É o próprio Grid */}
+      {/* Grid de cards - Otimizado para Produção */}
       <div 
         ref={containerRef}
         className="mt-3 mb-6"
         style={{ 
-          minHeight: minHeight, 
+          minHeight: lockedHeight, // Trava dinâmica de altura
           overflowAnchor: 'none' 
         }} 
       >
@@ -294,8 +294,8 @@ export default function LiveSearchContainer({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            /* RESTAURADO: Classes de grid originais no próprio motion.div */
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5"
+            /* IMPORTANTE: items-start impede que os cards estiquem para preencher a min-height */
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 items-start"
           >
             {isInitialPageLoad ? (
               Array.from({ length: itemsPerPage }).map((_, i) => (
