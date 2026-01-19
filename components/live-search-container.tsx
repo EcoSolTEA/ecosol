@@ -54,32 +54,34 @@ export default function LiveSearchContainer({
   const [isInitialPageLoad, setIsInitialPageLoad] = React.useState(true);
   const [searchError, setSearchError] = React.useState<string | null>(null);
   const [currentPage, setCurrentPage] = React.useState(1);
+  const [itemsPerPage, setItemsPerPage] = React.useState(6);
 
   const lastUpdateIds = React.useRef<string>("");
   const abortControllerRef = React.useRef<AbortController | null>(null);
 
-  // Calcular itens por página responsivamente
-  const getItemsPerPage = () => {
-    if (typeof window === 'undefined') return 6;
-    
-    const width = window.innerWidth;
-    if (width < 640) return 6;    // 2 colunas × 3 linhas
-    if (width < 1024) return 8;   // 2 colunas × 4 linhas
-    return 12;                    // 3 colunas × 4 linhas
-  };
-
-  const [itemsPerPage, setItemsPerPage] = React.useState(getItemsPerPage());
-
-  // Atualizar itemsPerPage no resize
+  // Calcular itens por página responsivamente - CORRIGIDO
   React.useEffect(() => {
+    const updateItemsPerPage = () => {
+      const width = window.innerWidth;
+      if (width < 640) {
+        setItemsPerPage(6); // 2 colunas × 3 linhas
+      } else if (width < 1024) {
+        setItemsPerPage(8); // 2 colunas × 4 linhas
+      } else {
+        setItemsPerPage(12); // 3 colunas × 4 linhas
+      }
+      // REMOVIDO: setCurrentPage(1) daqui - causava reset indesejado
+    };
+
+    updateItemsPerPage();
+    
     const handleResize = () => {
-      setItemsPerPage(getItemsPerPage());
-      setCurrentPage(1);
+      updateItemsPerPage();
     };
 
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  }, []); // Executa apenas uma vez na montagem
 
   // Inicialização
   React.useEffect(() => {
@@ -94,7 +96,7 @@ export default function LiveSearchContainer({
     return () => clearTimeout(timer);
   }, [initialServices]);
 
-  // Resetar página quando busca/filtro mudar
+  // Resetar página quando busca/filtro mudar - MANTIDO (comportamento esperado)
   React.useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, selectedCategory]);
@@ -214,16 +216,16 @@ export default function LiveSearchContainer({
     };
   }, [searchTerm, selectedCategory, masterOrder]);
 
-  // Cálculos de paginação - SIMPLES e DIRETO
+  // Cálculos finais
   const totalItems = services.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
   const paginatedServices = services.slice(startIndex, endIndex);
 
-  // Ajustar página atual se necessário
+  // Ajustar página atual se necessário - CORRIGIDO
   React.useEffect(() => {
-    if (currentPage > totalPages && totalPages > 0) {
+    if (totalPages > 0 && currentPage > totalPages) {
       setCurrentPage(totalPages);
     }
   }, [totalPages, currentPage]);
@@ -296,7 +298,7 @@ export default function LiveSearchContainer({
         </AnimatePresence>
       </div>
 
-      {/* Paginação - SIMPLES */}
+      {/* Paginação */}
       {totalPages > 1 && (
         <Pagination
           currentPage={currentPage}
