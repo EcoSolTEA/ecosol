@@ -3,11 +3,12 @@ import Header from "@/components/header";
 import ThemeToggleInline from "@/components/theme-toggle-inline";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import LogoutButton from "@/components/logout-button";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createServerClient } from "@supabase/ssr";
 import NotificationActions from "@/components/notification-actions";
-import { UserCircle, Settings, Bell, Eye, MessageSquare, ArrowLeft, LogOut, Sun, Moon } from "lucide-react";
+import { UserCircle, Settings, Bell, Eye, MessageSquare, ArrowLeft } from "lucide-react";
 
 export default async function ProfilePage() {
   const cookieStore = await cookies();
@@ -64,7 +65,7 @@ export default async function ProfilePage() {
             </div>
           </div>
           
-          {/* ÁREA DE CONTROLES - DESKTOP (estilo card) */}
+          {/* ÁREA DE CONTROLES - DESKTOP */}
           <div className="flex items-center gap-2 bg-card/50 backdrop-blur-sm rounded-2xl p-2 border border-border/50 shadow-lg">
             <Link href="/profile/edit">
               <Button
@@ -73,23 +74,13 @@ export default async function ProfilePage() {
                 className="h-10 rounded-xl font-black text-[10px] uppercase tracking-widest gap-2 hover:bg-muted px-4"
               >
                 <Settings className="w-4 h-4" />
-                <span>Config</span>
+                <span>Configurações</span>
               </Button>
             </Link>
             
             <div className="h-6 w-px bg-border/50" />
             
-            <form action="/auth/signout" method="POST">
-              <Button
-                type="submit"
-                variant="destructive"
-                size="sm"
-                className="h-10 rounded-xl font-black text-[10px] uppercase tracking-widest gap-2 shadow-destructive/10 hover:shadow-destructive/20 px-4"
-              >
-                <LogOut className="w-4 h-4" />
-                <span>Sair</span>
-              </Button>
-            </form>
+            <LogoutButton />
             
             <div className="h-6 w-px bg-border/50" />
             
@@ -109,36 +100,26 @@ export default async function ProfilePage() {
               <span className="hidden xs:inline">Voltar</span>
             </Link>
             
-            {/* CONTROLES MOBILE - ao lado do botão voltar */}
-            <div className="flex items-center gap-2 bg-card/50 backdrop-blur-sm rounded-2xl p-1.5 border border-border/50 shadow-lg">
+            {/* CONTROLES MOBILE */}
+            <div className="flex items-center bg-card/50 backdrop-blur-sm rounded-2xl border border-border/50 shadow-lg p-1.5">
               <Link href="/profile/edit">
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-9 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-muted p-2.5"
+                  className="h-9 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-muted px-2.5"
                   title="Configurações"
                 >
                   <Settings className="w-4 h-4" />
                 </Button>
               </Link>
               
-              <div className="h-5 w-px bg-border/50" />
+              <div className="h-5 w-px bg-border/50 mx-1" />
               
-              <form action="/auth/signout" method="POST">
-                <Button
-                  type="submit"
-                  variant="destructive"
-                  size="sm"
-                  className="h-9 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-destructive/10 hover:shadow-destructive/20 p-2.5"
-                  title="Sair"
-                >
-                  <LogOut className="w-4 h-4" />
-                </Button>
-              </form>
+              <LogoutButton mobile />
               
-              <div className="h-5 w-px bg-border/50" />
+              <div className="h-5 w-px bg-border/50 mx-1" />
               
-              <ThemeToggleInline className="h-9 w-9 rounded-xl border border-border/50 bg-card flex items-center justify-center shadow-sm hover:bg-muted transition-colors p-2" />
+              <ThemeToggleInline className="h-9 w-9 rounded-xl border border-border/50 bg-card flex items-center justify-center shadow-sm hover:bg-muted transition-colors p-1.5" />
             </div>
           </div>
 

@@ -2,8 +2,14 @@
 
 import { Button } from "./ui/button";
 import { supabase } from "@/lib/supabase";
+import { LogOut } from "lucide-react";
 
-export default function LogoutButton({ className }: { className?: string }) {
+interface LogoutButtonProps {
+  mobile?: boolean;
+  className?: string;
+}
+
+export default function LogoutButton({ mobile = false, className = "" }: LogoutButtonProps) {
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
@@ -13,16 +19,29 @@ export default function LogoutButton({ className }: { className?: string }) {
     window.location.href = "/";
   };
 
+  if (mobile) {
+    return (
+      <Button
+        variant="outline"
+        size="sm"
+        className={`h-9 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-muted px-2.5 ${className}`}
+        onClick={handleLogout}
+        title="Encerrar Sessão"
+      >
+        <LogOut className="w-4 h-4" />
+      </Button>
+    );
+  }
+
   return (
     <Button
       variant="outline"
-      className={
-        "rounded-2xl border-border bg-card px-4 h-12 font-black text-[10px] uppercase tracking-widest gap-2 shadow-sm hover:bg-muted " +
-        (className ?? "")
-      }
+      size="sm"
+      className={`h-10 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-muted px-4 ${className}`}
       onClick={handleLogout}
     >
-      Encerrar Sessão
+      <LogOut className="w-4 h-4" />
+      <span>Encerrar Sessão</span>
     </Button>
   );
 }
