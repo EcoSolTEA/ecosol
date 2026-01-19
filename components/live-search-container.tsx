@@ -257,7 +257,7 @@ export default function LiveSearchContainer({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 mt-3 mb-6 min-h-[500px]"
         style={{ overflowAnchor: 'none' }}
         >
-        <AnimatePresence mode="wait" initial={false}>
+        <AnimatePresence mode="popLayout" initial={false}>
           {isInitialPageLoad ? (
             Array.from({ length: itemsPerPage }).map((_, i) => (
               <motion.div
