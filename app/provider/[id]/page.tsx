@@ -24,10 +24,9 @@ export default async function ProviderPage({
     { cookies: { getAll: () => cookieStore.getAll() } }
   );
 
+  // LOGÍSTICA DE DADOS PARALELA
   const [
-    {
-      data: { user },
-    },
+    { data: { user } },
     service,
   ] = await Promise.all([
     supabase.auth.getUser(),
@@ -47,8 +46,10 @@ export default async function ProviderPage({
   const isOwner = user?.email === service.email;
   const canEdit = isAdmin || isOwner;
 
+  // SEGURANÇA DE ACESSO
   if (!service.approved && !canEdit) return notFound();
 
+  // CONTADOR DE VISUALIZAÇÕES (Somente para visitantes externos)
   if (service.approved && !canEdit) {
     await prisma.service.update({
       where: { id: parseInt(id) },
@@ -57,41 +58,41 @@ export default async function ProviderPage({
   }
 
   return (
-    /* Logística Visual: bg-slate-50 -> bg-background | text-slate-900 -> text-foreground */
-    <div className="min-h-screen bg-background text-foreground pb-12 transition-colors duration-300">
+    <div className="min-h-screen bg-background text-foreground pb-20 transition-colors duration-300">
       <Header />
 
-      <main className="mx-auto max-w-4xl px-4 py-6 md:py-8">
-        {/* 1. Navegação de Topo */}
-        <div className="flex justify-between items-center mb-4 px-2">
+      <main className="mx-auto max-w-6xl p-6 py-12 flex flex-col items-center">
+        
+        {/* TOP BAR: Navegação e Ações de Edição */}
+        <div className="w-full flex justify-between items-center mb-10">
           <Link
             href="/"
-            className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors"
+            className="group inline-flex items-center gap-2 text-primary text-[10px] font-black uppercase tracking-[0.2em] hover:opacity-80 transition-all bg-primary/5 px-4 py-2.5 rounded-xl border border-primary/10"
           >
-            <ArrowLeft className="h-3 w-3" /> Voltar para a busca
+            <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-1" /> 
+            <span>Voltar para a busca</span>
           </Link>
 
           {canEdit && (
             <Link
-              href={
-                isAdmin ? `/admin/provider/${id}/edit` : `/provider/edit/${id}`
-              }
+              href={isAdmin ? `/admin/provider/${id}/edit` : `/provider/edit/${id}`}
             >
               <Button
                 variant="outline"
-                className="h-8 border-primary/20 text-primary font-black text-[9px] uppercase tracking-widest rounded-xl hover:bg-primary/10 transition-all flex gap-2"
+                className="h-11 rounded-xl border-primary/20 bg-card text-primary font-black text-[10px] uppercase tracking-widest gap-2 shadow-sm hover:bg-primary/10 transition-all"
               >
-                <Settings className="h-3.5 w-3.5" />
+                <Settings className="w-4 h-4" />
                 {isAdmin ? "Admin Edit" : "Editar Negócio"}
               </Button>
             </Link>
           )}
         </div>
 
-        {/* 2. Card Principal: bg-white -> bg-card | border-slate-100 -> border-border */}
-        <div className="bg-card rounded-[2.5rem] shadow-sm border border-border p-4 md:p-8 flex flex-col md:flex-row gap-6 md:gap-10">
-          {/* Imagem: bg-slate-50 -> bg-muted */}
-          <div className="w-full md:w-2/5 aspect-square rounded-4xl bg-muted overflow-hidden border border-border shadow-inner relative">
+        {/* CARD PRINCIPAL CENTRALIZADO */}
+        <div className="w-full bg-card rounded-[2.5rem] shadow-xl border border-border p-5 md:p-10 flex flex-col md:flex-row gap-8 md:gap-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          
+          {/* CONTAINER DA IMAGEM */}
+          <div className="w-full md:w-2/5 aspect-square rounded-[2rem] bg-muted overflow-hidden border border-border shadow-inner relative shrink-0">
             {service.image ? (
               <Image
                 src={service.image}
@@ -109,34 +110,32 @@ export default async function ProviderPage({
             )}
           </div>
 
-          {/* Conteúdo: Hierarquia Visual Adaptativa */}
-          <div className="flex-1 flex flex-col">
-            <div className="flex items-center gap-3 mb-3">
-              {/* Badge Categoria: bg-blue-50 -> bg-primary/10 */}
-              <span className="text-[8px] font-black text-primary uppercase tracking-[0.25em] px-3 py-1 bg-primary/10 rounded-full">
+          {/* CONTEÚDO E INFO */}
+          <div className="flex-1 flex flex-col py-2">
+            <div className="flex flex-wrap items-center gap-3 mb-5">
+              <span className="text-[9px] font-black text-primary uppercase tracking-[0.25em] px-4 py-1.5 bg-primary/10 rounded-full border border-primary/10">
                 {service.category}
               </span>
+              
               {canEdit && (
-                /* Badge Visitas: text-slate-400 -> text-muted-foreground | bg-slate-50 -> bg-muted */
-                <span className="flex items-center gap-1.5 text-[9px] font-bold text-muted-foreground bg-muted px-2.5 py-1 rounded-full border border-border">
-                  <Eye className="h-3 w-3" /> {service.views} visitas
+                <span className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-muted-foreground bg-muted/50 px-3 py-1.5 rounded-full border border-border">
+                  <Eye className="w-3.5 h-3.5" /> {service.views} visitas
                 </span>
               )}
             </div>
 
-            <h1 className="text-3xl md:text-4xl font-black text-foreground tracking-tighter uppercase leading-none mb-4">
+            <h1 className="text-4xl md:text-5xl font-black text-foreground tracking-tighter uppercase leading-none mb-6">
               {service.name}
             </h1>
 
-            {/* Descrição: text-slate-500 -> text-muted-foreground */}
-            <p className="text-sm md:text-base text-muted-foreground leading-relaxed font-medium whitespace-pre-wrap mb-8">
+            <p className="text-sm md:text-base text-muted-foreground leading-relaxed font-medium whitespace-pre-wrap mb-10">
               {service.description}
             </p>
 
-            <div className="mt-auto space-y-6">
-              {/* Canais de Atendimento: text-slate-300 -> text-muted-foreground/50 */}
-              <div className="space-y-3">
-                <h3 className="text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground/50">
+            <div className="mt-auto space-y-8">
+              {/* CANAIS DE ATENDIMENTO */}
+              <div className="space-y-4">
+                <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground/40 border-b border-border/50 pb-2">
                   Canais de Atendimento
                 </h3>
                 <ContactIcons
