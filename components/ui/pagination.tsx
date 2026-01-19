@@ -178,10 +178,10 @@ export function Pagination({
         </div>
       </div>
 
-      {/* Controles Desktop */}
+      {/* Controles Desktop - AGORA CENTRALIZADO */}
       <div className="hidden sm:block">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-1">
+        <div className="flex flex-col items-center gap-4">
+          <div className="flex items-center justify-center gap-1">
             <Button
               variant="outline"
               size="sm"
@@ -204,7 +204,7 @@ export function Pagination({
               <ChevronLeft className="h-3.5 w-3.5" />
             </Button>
             
-            <div className="flex items-center gap-1 mx-1">
+            <div className="flex items-center gap-1 mx-2">
               {desktopPageNumbers.map((page, index) => (
                 <React.Fragment key={page}>
                   {index > 0 && desktopPageNumbers[index - 1] !== page - 1 && (

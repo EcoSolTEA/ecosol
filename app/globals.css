@@ -83,3 +83,48 @@
     transition-duration: 300ms;
   }
 }
+
+/* Garantir scroll por toque suave */
+.touch-pan-x {
+  touch-action: pan-x;
+}
+
+.touch-manipulation {
+  touch-action: manipulation;
+}
+
+.overscroll-x-contain {
+  overscroll-behavior-x: contain;
+}
+
+/* Scrollbar oculta universalmente */
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;     /* Firefox */
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+  width: 0;
+  height: 0;
+  background: transparent;
+}
+
+/* Suporte a scroll suave em iOS */
+.scroll-smooth {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Gradientes para fade effects */
+.fade-left {
+  mask-image: linear-gradient(to right, black 90%, transparent 100%);
+}
+
+.fade-right {
+  mask-image: linear-gradient(to left, black 90%, transparent 100%);
+}
+
+.fade-both {
+  mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
+}

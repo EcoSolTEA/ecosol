@@ -3,12 +3,11 @@ import Header from "@/components/header";
 import ThemeToggleInline from "@/components/theme-toggle-inline";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import LogoutButton from "@/components/logout-button";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createServerClient } from "@supabase/ssr";
 import NotificationActions from "@/components/notification-actions";
-import { UserCircle, Settings, Bell, Eye, MessageSquare, ArrowLeft } from "lucide-react";
+import { UserCircle, Settings, Bell, Eye, MessageSquare, ArrowLeft, LogOut, Sun, Moon } from "lucide-react";
 
 export default async function ProfilePage() {
   const cookieStore = await cookies();
@@ -49,19 +48,8 @@ export default async function ProfilePage() {
     <div className="min-h-screen bg-background text-foreground transition-colors duration-300 pb-20">
       <Header />
       <main className="mx-auto max-w-5xl p-6 py-12">
-        {/* BOTÃO DE VOLTAR AO INÍCIO - ADICIONADO */}
-        <div className="mb-6">
-          <Link 
-            href="/" 
-            className="group inline-flex items-center gap-2 text-primary text-[10px] font-black uppercase tracking-widest hover:opacity-80 transition-opacity"
-          >
-            <ArrowLeft className="w-3 h-3 transition-transform group-hover:-translate-x-1" /> 
-            Voltar ao Início
-          </Link>
-        </div>
-
-        {/* HEADER DO PERFIL: bg-blue-600 -> bg-primary */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6">
+        {/* DESKTOP: Controles ao lado do título */}
+        <div className="hidden md:flex justify-between items-end mb-12">
           <div className="flex items-center gap-5">
             <div className="w-20 h-20 bg-primary rounded-4xl flex items-center justify-center text-primary-foreground shadow-xl shadow-primary/20">
               <UserCircle className="w-12 h-12" />
@@ -75,29 +63,110 @@ export default async function ProfilePage() {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 self-end">
+          
+          {/* ÁREA DE CONTROLES - DESKTOP (estilo card) */}
+          <div className="flex items-center gap-2 bg-card/50 backdrop-blur-sm rounded-2xl p-2 border border-border/50 shadow-lg">
             <Link href="/profile/edit">
               <Button
-                variant="outline"
-                className="rounded-2xl border-border bg-card px-6 h-12 font-black text-[10px] uppercase tracking-widest gap-2 shadow-sm hover:bg-muted"
+                variant="ghost"
+                size="sm"
+                className="h-10 rounded-xl font-black text-[10px] uppercase tracking-widest gap-2 hover:bg-muted px-4"
               >
-                <Settings className="w-4 h-4" /> Configurações
+                <Settings className="w-4 h-4" />
+                <span>Config</span>
               </Button>
             </Link>
-            <LogoutButton />
-            <ThemeToggleInline className="md:ml-3" />
+            
+            <div className="h-6 w-px bg-border/50" />
+            
+            <form action="/auth/signout" method="POST">
+              <Button
+                type="submit"
+                variant="destructive"
+                size="sm"
+                className="h-10 rounded-xl font-black text-[10px] uppercase tracking-widest gap-2 shadow-destructive/10 hover:shadow-destructive/20 px-4"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Sair</span>
+              </Button>
+            </form>
+            
+            <div className="h-6 w-px bg-border/50" />
+            
+            <ThemeToggleInline className="h-10 w-10 rounded-xl border border-border/50 bg-card flex items-center justify-center shadow-sm hover:bg-muted transition-colors" />
+          </div>
+        </div>
+
+        {/* MOBILE: Título e botões em grid */}
+        <div className="md:hidden mb-12">
+          {/* Botão de voltar + controles em linha */}
+          <div className="flex justify-between items-center mb-8">
+            <Link 
+              href="/" 
+              className="group inline-flex items-center gap-2 text-primary text-[10px] font-black uppercase tracking-widest hover:opacity-80 transition-opacity"
+            >
+              <ArrowLeft className="w-3 h-3 transition-transform group-hover:-translate-x-1" /> 
+              <span className="hidden xs:inline">Voltar</span>
+            </Link>
+            
+            {/* CONTROLES MOBILE - ao lado do botão voltar */}
+            <div className="flex items-center gap-2 bg-card/50 backdrop-blur-sm rounded-2xl p-1.5 border border-border/50 shadow-lg">
+              <Link href="/profile/edit">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-9 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-muted p-2.5"
+                  title="Configurações"
+                >
+                  <Settings className="w-4 h-4" />
+                </Button>
+              </Link>
+              
+              <div className="h-5 w-px bg-border/50" />
+              
+              <form action="/auth/signout" method="POST">
+                <Button
+                  type="submit"
+                  variant="destructive"
+                  size="sm"
+                  className="h-9 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-destructive/10 hover:shadow-destructive/20 p-2.5"
+                  title="Sair"
+                >
+                  <LogOut className="w-4 h-4" />
+                </Button>
+              </form>
+              
+              <div className="h-5 w-px bg-border/50" />
+              
+              <ThemeToggleInline className="h-9 w-9 rounded-xl border border-border/50 bg-card flex items-center justify-center shadow-sm hover:bg-muted transition-colors p-2" />
+            </div>
+          </div>
+
+          {/* Título e avatar em mobile */}
+          <div className="flex items-center gap-5">
+            <div className="w-16 h-16 bg-primary rounded-3xl flex items-center justify-center text-primary-foreground shadow-xl shadow-primary/20">
+              <UserCircle className="w-10 h-10" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-black text-foreground tracking-tighter uppercase leading-none">
+                Meu Perfil
+              </h1>
+              <p className="text-muted-foreground font-medium italic text-sm truncate max-w-[200px]">
+                {user.email}
+              </p>
+            </div>
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
-          {/* INFO CARD: bg-white -> bg-card */}
-          <div className="lg:col-span-2 bg-card p-10 rounded-[2.5rem] shadow-md border border-border flex flex-col justify-center">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+          {/* INFO CARD */}
+          <div className="lg:col-span-2 bg-card p-8 md:p-10 rounded-[2.5rem] shadow-md border border-border flex flex-col justify-center">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8">
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-muted-foreground/50 uppercase tracking-[0.2em]">
                   Nome cadastrado
                 </label>
-                <p className="text-xl font-black text-foreground tracking-tight uppercase">
+                <p className="text-lg md:text-xl font-black text-foreground tracking-tight uppercase">
                   {dbUser.name || "Não informado"}
                 </p>
               </div>
@@ -105,19 +174,19 @@ export default async function ProfilePage() {
                 <label className="text-[10px] font-black text-muted-foreground/50 uppercase tracking-[0.2em]">
                   Contato WhatsApp
                 </label>
-                <p className="text-xl font-black text-foreground tracking-tight">
+                <p className="text-lg md:text-xl font-black text-foreground tracking-tight">
                   {dbUser.phone || "Não informado"}
                 </p>
               </div>
             </div>
           </div>
 
-          {/* VISUALIZAÇÕES CARD: Destaque Dinâmico */}
-          <div className="bg-primary p-10 rounded-[2.5rem] shadow-2xl flex flex-col items-center justify-center text-center relative overflow-hidden group">
+          {/* VISUALIZAÇÕES CARD */}
+          <div className="bg-primary p-8 md:p-10 rounded-[2.5rem] shadow-2xl flex flex-col items-center justify-center text-center relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-125 transition-transform duration-500">
-              <Eye className="w-24 h-24 text-primary-foreground" />
+              <Eye className="w-20 h-20 md:w-24 md:h-24 text-primary-foreground" />
             </div>
-            <h3 className="text-7xl font-black text-primary-foreground tracking-tighter leading-none">
+            <h3 className="text-5xl md:text-7xl font-black text-primary-foreground tracking-tighter leading-none">
               {service?.views || 0}
             </h3>
             <p className="text-primary-foreground/80 text-[11px] font-black uppercase tracking-[0.2em] mt-2">
@@ -126,15 +195,15 @@ export default async function ProfilePage() {
           </div>
         </div>
 
-        {/* NOTIFICAÇÕES: bg-white -> bg-card */}
+        {/* NOTIFICAÇÕES */}
         <section className="bg-card rounded-[2.5rem] shadow-md border border-border overflow-hidden">
-          <div className="px-10 py-8 border-b border-border flex flex-col sm:flex-row justify-between items-center gap-4 bg-muted/20">
+          <div className="px-6 md:px-10 py-6 md:py-8 border-b border-border flex flex-col sm:flex-row justify-between items-center gap-4 bg-muted/20">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-primary/10 rounded-2xl text-primary">
-                <Bell className="w-6 h-6" />
+                <Bell className="w-5 h-5 md:w-6 md:h-6" />
               </div>
               <div>
-                <h2 className="text-xl font-black text-foreground tracking-tight uppercase">
+                <h2 className="text-lg md:text-xl font-black text-foreground tracking-tight uppercase">
                   Notificações
                 </h2>
                 <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">
@@ -149,10 +218,10 @@ export default async function ProfilePage() {
             />
           </div>
 
-          <div className="p-4 sm:p-10 space-y-4 bg-card">
+          <div className="p-4 md:p-10 space-y-4 bg-card">
             {dbUser.notifications.length === 0 ? (
-              <div className="py-16 text-center">
-                <MessageSquare className="w-12 h-12 text-muted-foreground/20 mx-auto mb-4" />
+              <div className="py-12 md:py-16 text-center">
+                <MessageSquare className="w-10 h-10 md:w-12 md:h-12 text-muted-foreground/20 mx-auto mb-4" />
                 <p className="text-muted-foreground font-bold italic text-sm">
                   Nenhuma notificação por enquanto.
                 </p>
@@ -162,13 +231,13 @@ export default async function ProfilePage() {
               dbUser.notifications.map((n: any) => (
                 <div
                   key={String(n.id)}
-                  className={`group p-6 rounded-3xl border transition-all duration-300 ${
+                  className={`group p-4 md:p-6 rounded-2xl md:rounded-3xl border transition-all duration-300 ${
                     n.read
                       ? "bg-muted/10 border-border opacity-50"
                       : "bg-primary/5 border-primary/20 shadow-sm"
                   }`}
                 >
-                  <div className="flex justify-between items-start gap-8">
+                  <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-2 md:gap-8">
                     <p
                       className={`text-sm leading-relaxed ${
                         n.read
