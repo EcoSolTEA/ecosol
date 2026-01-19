@@ -55,9 +55,9 @@ export default function LiveSearchContainer({
   const [currentPage, setCurrentPage] = React.useState(1);
   const [itemsPerPage, setItemsPerPage] = React.useState(6);
 
-  // --- ENGENHARIA DE ESTABILIDADE (ZERO JUMP) ---
+  // --- ENGENHARIA DE ESTABILIDADE (ÂNCORA DE SCROLL) ---
   const containerRef = React.useRef<HTMLDivElement>(null);
-  const [lockedHeight, setLockedHeight] = React.useState<string | number>("auto");
+  const topAnchorRef = React.useRef<HTMLDivElement>(null);
 
   const lastUpdateIds = React.useRef<string>("");
   const abortControllerRef = React.useRef<AbortController | null>(null);
@@ -105,15 +105,19 @@ export default function LiveSearchContainer({
     return () => clearTimeout(timer);
   }, [initialServices]);
 
-  // Função handlePageChange: Trava a altura antes de mudar o estado
+  /**
+   * FUNÇÃO handlePageChange:
+   * Em vez de travas de altura porcas ou ghosts, esta função garante
+   * que o usuário seja levado suavemente ao topo da lista ao trocar de página.
+   */
   const handlePageChange = (page: number) => {
-    if (containerRef.current) {
-      setLockedHeight(containerRef.current.offsetHeight);
-    }
     setCurrentPage(page);
     
-    // Libera a trava após a animação
-    setTimeout(() => setLockedHeight("auto"), 500);
+    if (topAnchorRef.current) {
+      const yOffset = -120; // Margem para não bater no Header fixo
+      const y = topAnchorRef.current.getBoundingClientRect().top + window.pageYOffset + yOffset;
+      window.scrollTo({ top: y, behavior: "smooth" });
+    }
   };
 
   // Resetar página quando busca/filtro mudar
@@ -123,7 +127,7 @@ export default function LiveSearchContainer({
     }
   }, [searchTerm, selectedCategory, isInitialPageLoad]);
 
-  // Busca e filtragem
+  // Busca e filtragem (Sua lógica integral preservada)
   React.useEffect(() => {
     const performUpdate = async () => {
       if (abortControllerRef.current) {
@@ -245,10 +249,6 @@ export default function LiveSearchContainer({
   const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
   const paginatedServices = services.slice(startIndex, endIndex);
 
-  // Lógica de Preenchimento (Ghost Slots) para estabilidade de altura
-  const emptySlotsCount = itemsPerPage - paginatedServices.length;
-  const ghostSlots = Array.from({ length: Math.max(0, emptySlotsCount) });
-
   // Ajustar página atual se necessário
   React.useEffect(() => {
     if (totalPages > 0 && currentPage > totalPages) {
@@ -258,6 +258,9 @@ export default function LiveSearchContainer({
 
   return (
     <div className="w-full flex flex-col transition-colors duration-300">
+      {/* ÂNCORA DE SCROLL PARA NAVEGAÇÃO FLUIDA */}
+      <div ref={topAnchorRef} className="scroll-mt-24" />
+
       <section className="flex flex-col items-center py-3 gap-3">
         <div className="text-center space-y-0">
           <h1 className="text-2xl font-bold text-foreground tracking-tighter uppercase leading-tight">
@@ -284,19 +287,16 @@ export default function LiveSearchContainer({
       <div 
         ref={containerRef}
         className="mt-3 mb-6"
-        style={{ 
-          minHeight: lockedHeight, 
-          overflowAnchor: 'none' 
-        }} 
+        style={{ overflowAnchor: 'none' }} 
       >
         <AnimatePresence mode="wait">
           <motion.div
             key={currentPage + selectedCategory + searchTerm}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 items-start"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5"
           >
             {isInitialPageLoad ? (
               Array.from({ length: itemsPerPage }).map((_, i) => (
@@ -316,18 +316,9 @@ export default function LiveSearchContainer({
                 </p>
               </motion.div>
             ) : (
-              <>
-                {paginatedServices.map((service) => (
-                  <ServiceCard key={service.id} service={service} />
-                ))}
-                
-                {/* Ghost Cards: Mantêm a altura do Grid constante em todas as páginas */}
-                {!isSearching && ghostSlots.map((_, i) => (
-                  <div key={`ghost-${i}`} className="opacity-0 pointer-events-none aria-hidden">
-                    <ServiceSkeleton />
-                  </div>
-                ))}
-              </>
+              paginatedServices.map((service) => (
+                <ServiceCard key={service.id} service={service} />
+              ))
             )}
           </motion.div>
         </AnimatePresence>
