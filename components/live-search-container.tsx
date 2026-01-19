@@ -59,7 +59,7 @@ export default function LiveSearchContainer({
   const lastUpdateIds = React.useRef<string>("");
   const abortControllerRef = React.useRef<AbortController | null>(null);
 
-  // Calcular itens por página responsivamente - CORRIGIDO
+  // Calcular itens por página responsivamente
   React.useEffect(() => {
     const updateItemsPerPage = () => {
       const width = window.innerWidth;
@@ -70,7 +70,6 @@ export default function LiveSearchContainer({
       } else {
         setItemsPerPage(12); // 3 colunas × 4 linhas
       }
-      // REMOVIDO: setCurrentPage(1) daqui - causava reset indesejado
     };
 
     updateItemsPerPage();
@@ -96,7 +95,7 @@ export default function LiveSearchContainer({
     return () => clearTimeout(timer);
   }, [initialServices]);
 
-  // Resetar página quando busca/filtro mudar - MANTIDO (comportamento esperado)
+  // Resetar página quando busca/filtro mudar
   React.useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, selectedCategory]);
@@ -223,7 +222,7 @@ export default function LiveSearchContainer({
   const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
   const paginatedServices = services.slice(startIndex, endIndex);
 
-  // Ajustar página atual se necessário - CORRIGIDO
+  // Ajustar página atual se necessário
   React.useEffect(() => {
     if (totalPages > 0 && currentPage > totalPages) {
       setCurrentPage(totalPages);
@@ -255,8 +254,10 @@ export default function LiveSearchContainer({
       </div>
 
       {/* Grid de cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 mt-3 mb-6">
-        <AnimatePresence mode="popLayout" initial={false}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 mt-3 mb-6 min-h-[500px]"
+        style={{ overflowAnchor: 'none' }}
+        >
+        <AnimatePresence mode="wait" initial={false}>
           {isInitialPageLoad ? (
             Array.from({ length: itemsPerPage }).map((_, i) => (
               <motion.div

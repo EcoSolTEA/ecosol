@@ -241,6 +241,7 @@ export function Pagination({
             </Button>
             
             <Button
+              type="button"
               variant="outline"
               size="sm"
               onClick={goToLastPage}
