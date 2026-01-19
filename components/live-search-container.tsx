@@ -55,21 +55,21 @@ export default function LiveSearchContainer({
   const [currentPage, setCurrentPage] = React.useState(1);
   const [itemsPerPage, setItemsPerPage] = React.useState(6);
 
-  // --- TRAVAS DE ESTABILIDADE PARA PRODUÇÃO ---
+  // --- TRAVAS DE ENGENHARIA PARA PRODUÇÃO (SEM QUEBRAR O LAYOUT) ---
   const containerRef = React.useRef<HTMLDivElement>(null);
-  const [minHeight, setMinHeight] = React.useState("600px");
+  const [minHeight, setMinHeight] = React.useState("auto");
 
   const lastUpdateIds = React.useRef<string>("");
   const abortControllerRef = React.useRef<AbortController | null>(null);
 
-  // 1. SOLUÇÃO DE ENGENHARIA: Controle manual do scroll para evitar saltos do Next.js
+  // 1. Desativar restauração de scroll automática do navegador (Crucial para produção)
   React.useEffect(() => {
     if ("scrollRestoration" in history) {
       history.scrollRestoration = "manual";
     }
   }, []);
 
-  // Calcular itens por página responsivamente
+  // Calcular itens por página responsivamente - MANTIDO ORIGINAL
   React.useEffect(() => {
     const updateItemsPerPage = () => {
       const width = window.innerWidth;
@@ -92,7 +92,7 @@ export default function LiveSearchContainer({
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Inicialização - Shuffle
+  // Inicialização - Shuffle original mantido
   React.useEffect(() => {
     const shuffled = shuffleArray(initialServices);
     setMasterOrder(shuffled);
@@ -105,12 +105,16 @@ export default function LiveSearchContainer({
     return () => clearTimeout(timer);
   }, [initialServices]);
 
-  // Função handlePageChange personalizada para travar a altura
+  // Função handlePageChange personalizada para travar a altura sem esticar cards
   const handlePageChange = (page: number) => {
     if (containerRef.current) {
+      // Travamos a altura exata do container para o rodapé não subir
       setMinHeight(`${containerRef.current.offsetHeight}px`);
     }
     setCurrentPage(page);
+    
+    // Resetamos a trava após a animação de entrada (ajuste fino)
+    setTimeout(() => setMinHeight("auto"), 400);
   };
 
   // Resetar página quando busca/filtro mudar
@@ -120,7 +124,7 @@ export default function LiveSearchContainer({
     }
   }, [searchTerm, selectedCategory, isInitialPageLoad]);
 
-  // Busca e filtragem
+  // Busca e filtragem - Lógica completa restaurada
   React.useEffect(() => {
     const performUpdate = async () => {
       if (abortControllerRef.current) {
@@ -251,7 +255,6 @@ export default function LiveSearchContainer({
 
   return (
     <div className="w-full flex flex-col transition-colors duration-300">
-      {/* Header */}
       <section className="flex flex-col items-center py-3 gap-3">
         <div className="text-center space-y-0">
           <h1 className="text-2xl font-bold text-foreground tracking-tighter uppercase leading-tight">
@@ -264,7 +267,6 @@ export default function LiveSearchContainer({
         </div>
       </section>
 
-      {/* Filtro de categorias */}
       <div className="py-2 border-b border-border">
         <CategoryFilter
           categories={categories}
@@ -276,10 +278,10 @@ export default function LiveSearchContainer({
         />
       </div>
 
-      {/* Grid de cards - Trava de Altura e Single-Child Wrapper para Framer Motion */}
+      {/* Grid de cards - CORREÇÃO: O motion.div agora É o próprio Grid */}
       <div 
         ref={containerRef}
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 mt-3 mb-6"
+        className="mt-3 mb-6"
         style={{ 
           minHeight: minHeight, 
           overflowAnchor: 'none' 
@@ -292,7 +294,8 @@ export default function LiveSearchContainer({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="col-span-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5"
+            /* RESTAURADO: Classes de grid originais no próprio motion.div */
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5"
           >
             {isInitialPageLoad ? (
               Array.from({ length: itemsPerPage }).map((_, i) => (
@@ -320,7 +323,6 @@ export default function LiveSearchContainer({
         </AnimatePresence>
       </div>
 
-      {/* Paginação usando handlePageChange para garantir estabilidade */}
       {totalPages > 1 && (
         <Pagination
           currentPage={currentPage}
