@@ -20,6 +20,7 @@ import {
   Moon,
   Loader2,
   ShieldCheck,
+  LogIn,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -174,7 +175,6 @@ export default function Header() {
         <div className="mx-auto max-w-6xl h-full flex items-center justify-between px-3 sm:px-4">
           {/* LOGO AREA */}
           <Link href="/" className="flex items-center gap-2 group shrink-0">
-            {/* Ajustado: removido rounded-full, border e alterado para object-contain */}
             <div className="relative h-9 w-9 sm:h-10 sm:w-10 overflow-hidden rounded-md group-hover:scale-105 transition-transform">
               <Image
                 src="/ecosol-meta.png"
@@ -182,13 +182,12 @@ export default function Header() {
                 fill
                 sizes="(max-width: 640px) 36px, 40px"
                 loading="eager"
-                className="object-contain" // Garante que a imagem apareça inteira sem cortes
+                className="object-contain"
                 priority
               />
             </div>
 
             <div className="flex flex-col">
-              {/* Adicionado whitespace-nowrap para evitar quebra no mobile e tracking-tighter */}
               <span className="font-black text-lg sm:text-xl tracking-tighter text-foreground leading-none uppercase whitespace-nowrap">
                 ECOSOL
               </span>
@@ -327,7 +326,6 @@ export default function Header() {
                           <UserIcon className="h-4 w-4" /> Perfil da Conta
                         </Link>
 
-                        {/* FLAG DE TERMOS DE USO - ADICIONADO AQUI */}
                         <Link
                           href="/terms"
                           onClick={() => setIsUserMenuOpen(false)}
@@ -355,35 +353,32 @@ export default function Header() {
       {/* Bottom navigation for mobile devices */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 border-t bg-card z-40 h-14">
         <div className="mx-auto max-w-6xl h-full flex items-center justify-between px-4">
-          {/* usePathname is a hook, call inside component render */}
-          <>
-            <Link
-              href="/"
-              className={cn(base, pathname === "/" ? active : inactive)}
-            >
-              <Home className="h-6 w-6" />
-              <span className="text-[11px]">Início</span>
-            </Link>
+          {/* Início - sempre visível */}
+          <Link
+            href="/"
+            className={cn(base, pathname === "/" ? active : inactive)}
+          >
+            <Home className="h-6 w-6" />
+            <span className="text-[11px]">Início</span>
+          </Link>
 
+          {/* Novo Negócio - apenas para usuários logados */}
+          {user && (
             <Link
               href="/submit"
-              className={cn(
-                base,
-                pathname === "/submit" ? active : inactive
-              )}
+              className={cn(base, pathname === "/submit" ? active : inactive)}
             >
               <PlusCircle className="h-6 w-6" />
               <span className="text-[11px]">Negócio</span>
             </Link>
+          )}
 
+          {/* Notificações - apenas para usuários logados */}
+          {user && (
             <button
               onClick={() => setIsModalOpen(true)}
               aria-label="Notificações"
-              className={cn(
-                base,
-                isModalOpen ? active : inactive,
-                "relative"
-              )}
+              className={cn(base, isModalOpen ? active : inactive, "relative")}
             >
               <Bell className="h-6 w-6" />
               {hasUnread && (
@@ -391,32 +386,36 @@ export default function Header() {
               )}
               <span className="text-[11px]">Notificações</span>
             </button>
+          )}
 
-            {role === "ADMIN" && (
-              <Link
-                href="/admin/dashboard"
-                className={cn(
-                  base,
-                  pathname.startsWith("/admin") ? active : inactive,
-                  "relative"
-                )}
-              >
-                <LayoutDashboard className="h-6 w-6" />
-                <span className="text-[11px]">Admin</span>
-                {pendingCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-destructive text-white text-[10px] font-black h-4 min-w-4.5 px-1 rounded-full flex items-center justify-center">
-                    {isLoadingCount ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : pendingCount > 99 ? (
-                      "99+"
-                    ) : (
-                      pendingCount
-                    )}
-                  </span>
-                )}
-              </Link>
-            )}
+          {/* Admin Dashboard - apenas para admin logados */}
+          {user && role === "ADMIN" && (
+            <Link
+              href="/admin/dashboard"
+              className={cn(
+                base,
+                pathname.startsWith("/admin") ? active : inactive,
+                "relative"
+              )}
+            >
+              <LayoutDashboard className="h-6 w-6" />
+              <span className="text-[11px]">Admin</span>
+              {pendingCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-destructive text-white text-[10px] font-black h-4 min-w-4.5 px-1 rounded-full flex items-center justify-center">
+                  {isLoadingCount ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : pendingCount > 99 ? (
+                    "99+"
+                  ) : (
+                    pendingCount
+                  )}
+                </span>
+              )}
+            </Link>
+          )}
 
+          {/* Perfil ou Entrar */}
+          {user ? (
             <Link
               href="/profile"
               className={cn(
@@ -429,7 +428,15 @@ export default function Header() {
               </div>
               <span className="text-[11px]">Perfil</span>
             </Link>
-          </>
+          ) : (
+            <Link
+              href="/login"
+              className={cn(base, pathname === "/login" ? active : inactive)}
+            >
+              <LogIn className="h-6 w-6" />
+              <span className="text-[11px]">Entrar</span>
+            </Link>
+          )}
         </div>
       </nav>
 
@@ -443,7 +450,7 @@ export default function Header() {
           read: Boolean(n.read),
         }))}
         userEmail={user?.email || ""}
-        onRefresh={() => loadUserData(user?.email || "")}
+        onRefresh={() => user?.email && loadUserData(user.email)}
       />
     </>
   );
