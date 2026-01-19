@@ -48,96 +48,67 @@ export default async function ProfilePage() {
   return (
     <div className="min-h-screen bg-background text-foreground transition-colors duration-300 pb-20">
       <Header />
-      <main className="mx-auto max-w-5xl p-6 py-12">
-        {/* DESKTOP: Controles ao lado do título */}
-        <div className="hidden md:flex justify-between items-end mb-12">
-          <div className="flex items-center gap-5">
-            <div className="w-20 h-20 bg-primary rounded-4xl flex items-center justify-center text-primary-foreground shadow-xl shadow-primary/20">
-              <UserCircle className="w-12 h-12" />
-            </div>
-            <div>
-              <h1 className="text-4xl font-black text-foreground tracking-tighter uppercase leading-none">
-                Meu Perfil
-              </h1>
-              <p className="text-muted-foreground font-medium italic text-sm">
-                {user.email}
-              </p>
-            </div>
-          </div>
-          
-          {/* ÁREA DE CONTROLES - DESKTOP */}
-          <div className="flex items-center gap-2 bg-card/50 backdrop-blur-sm rounded-2xl p-2 border border-border/50 shadow-lg">
+      <main className="mx-auto max-w-6xl p-6 py-12">
+        {/* BARRA DE NAVEGAÇÃO E CONTROLES SUPERIOR */}
+        <div className="flex justify-between items-center mb-10">
+          <Link 
+            href="/" 
+            className="group inline-flex items-center gap-2 text-primary text-[10px] font-black uppercase tracking-[0.2em] hover:opacity-80 transition-all bg-primary/5 px-4 py-2.5 rounded-xl border border-primary/10"
+          >
+            <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-1" /> 
+            <span>Voltar</span>
+          </Link>
+
+          {/* ÁREA DE CONTROLES GLOBAL (Desktop e Mobile) */}
+          <div className="flex items-center bg-card/50 backdrop-blur-sm rounded-2xl border border-border/50 shadow-lg p-1.5 gap-1">
             <Link href="/profile/edit">
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-10 rounded-xl font-black text-[10px] uppercase tracking-widest gap-2 hover:bg-muted px-4"
+                className="h-10 md:h-11 px-2.5 md:px-4 rounded-xl font-black text-[10px] uppercase tracking-widest gap-2 hover:bg-muted transition-all"
+                title="Configurações"
               >
-                <Settings className="w-4 h-4" />
-                <span>Configurações</span>
+                <Settings className="w-5 h-5 md:w-4 md:h-4" />
+                <span className="hidden md:inline">Configurações</span>
               </Button>
             </Link>
             
-            <div className="h-6 w-px bg-border/50" />
+            <div className="h-5 w-px bg-border/50 mx-0.5" />
             
-            <LogoutButton />
+            <LogoutButton mobile className="md:hidden" />
+            <div className="hidden md:block">
+              <LogoutButton />
+            </div>
             
-            <div className="h-6 w-px bg-border/50" />
+            <div className="h-5 w-px bg-border/50 mx-0.5" />
             
-            <ThemeToggleInline className="h-10 w-10 rounded-xl border border-border/50 bg-card flex items-center justify-center shadow-sm hover:bg-muted transition-colors" />
+            <ThemeToggleInline className="h-10 md:h-11 w-10 md:w-11 rounded-xl border border-border/50 bg-card flex items-center justify-center shadow-sm hover:bg-muted transition-colors p-0" />
           </div>
         </div>
 
-        {/* MOBILE: Título e botões em grid */}
-        <div className="md:hidden mb-12">
-          {/* Botão de voltar + controles em linha */}
-          <div className="flex justify-between items-center mb-8">
-            <Link 
-              href="/" 
-              className="group inline-flex items-center gap-2 text-primary text-[10px] font-black uppercase tracking-widest hover:opacity-80 transition-opacity"
-            >
-              <ArrowLeft className="w-3 h-3 transition-transform group-hover:-translate-x-1" /> 
-              <span className="hidden xs:inline">Voltar</span>
-            </Link>
-            
-            {/* CONTROLES MOBILE */}
-            <div className="flex items-center bg-card/50 backdrop-blur-sm rounded-2xl border border-border/50 shadow-lg p-1.5">
-              <Link href="/profile/edit">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-9 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-muted px-2.5"
-                  title="Configurações"
-                >
-                  <Settings className="w-4 h-4" />
-                </Button>
-              </Link>
-              
-              <div className="h-5 w-px bg-border/50 mx-1" />
-              
-              <LogoutButton mobile />
-              
-              <div className="h-5 w-px bg-border/50 mx-1" />
-              
-              <ThemeToggleInline className="h-9 w-9 rounded-xl border border-border/50 bg-card flex items-center justify-center shadow-sm hover:bg-muted transition-colors p-1.5" />
-            </div>
+        {/* HEADER DA PÁGINA: IDENTIDADE (DESKTOP) */}
+        <section className="hidden md:flex items-center mb-12 gap-6">
+          <div className="p-4 bg-primary/10 rounded-3xl text-primary shadow-inner">
+            <UserCircle size={32} />
           </div>
+          <div>
+            <h2 className="text-3xl font-black tracking-tighter text-foreground uppercase leading-none">Meu Perfil</h2>
+            <p className="text-muted-foreground font-medium mt-1">{user.email}</p>
+          </div>
+        </section>
 
-          {/* Título e avatar em mobile */}
+        {/* HEADER DA PÁGINA: IDENTIDADE (MOBILE) */}
+        <section className="md:hidden flex flex-col items-start mb-12 gap-6">
           <div className="flex items-center gap-5">
-            <div className="w-16 h-16 bg-primary rounded-3xl flex items-center justify-center text-primary-foreground shadow-xl shadow-primary/20">
-              <UserCircle className="w-10 h-10" />
+            <div className="p-4 bg-primary/10 rounded-3xl text-primary shadow-inner">
+              <UserCircle size={32} />
             </div>
             <div>
-              <h1 className="text-3xl font-black text-foreground tracking-tighter uppercase leading-none">
-                Meu Perfil
-              </h1>
-              <p className="text-muted-foreground font-medium italic text-sm truncate max-w-[200px]">
-                {user.email}
-              </p>
+              <h2 className="text-3xl font-black tracking-tighter text-foreground uppercase leading-none">Meu Perfil</h2>
+              <p className="text-muted-foreground font-medium mt-1 truncate max-w-[200px]">{user.email}</p>
             </div>
           </div>
-        </div>
+        </section>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
           {/* INFO CARD */}
@@ -208,7 +179,6 @@ export default async function ProfilePage() {
                 </p>
               </div>
             ) : (
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               dbUser.notifications.map((n: any) => (
                 <div
                   key={String(n.id)}

@@ -98,7 +98,7 @@ export default function NotificationModal({
                 </>
               ) : (
                 <button onClick={() => handleAction("PATCH", [], true)} className="text-[10px] font-black uppercase text-muted-foreground hover:text-primary transition-colors">
-                  Lêr tudo
+                  Ler tudo
                 </button>
               )}
             </div>

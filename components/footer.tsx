@@ -39,10 +39,10 @@ const CONFIG = {
     description:
       "Plataforma colaborativa que conecta profissionais autistas, promovendo autonomia financeira e colaboração técnica em ambiente inclusivo.",
     copyright: `© ${new Date().getFullYear()} Ecosol • Gestão de Economia Solidária`,
-    version: pkg?.version ? `v${pkg.version}` : "v0.0.0", // Puxa a versão do package.json
+    version: pkg?.version ? `v${pkg.version}` : "v0.0.0",
     logo: "/ecosol-meta.png",
     termsUrl: "/terms",
-    repoPath: "EcoSolTEA/ecosol", // Caminho do seu repositório
+    repoPath: "EcoSolTEA/ecosol",
   },
   contacts: [
     { name: "Larissa Matos", role: "Moderadora", phone: "553199784140" },
@@ -277,7 +277,6 @@ export default function Footer() {
 
     const fetchVersion = async () => {
       try {
-        // 1. Tenta buscar o Release mais recente
         const releaseRes = await fetch(
           `https://api.github.com/repos/${CONFIG.platform.repoPath}/releases/latest`
         );
@@ -289,7 +288,6 @@ export default function Footer() {
           }
         }
 
-        // 2. Fallback: Busca a última Tag se não houver Releases oficiais
         const tagsRes = await fetch(
           `https://api.github.com/repos/${CONFIG.platform.repoPath}/tags`
         );
@@ -327,8 +325,8 @@ export default function Footer() {
   ].filter((s) => s.url !== "");
 
   return (
-    <footer className="w-full border-t bg-card text-card-foreground">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 py-6">
+    <footer className="w-full border-t bg-card text-card-foreground pb-14 md:pb-0">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 py-5 md:py-6">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 items-start">
           <div className="col-span-2 md:col-span-2 space-y-3">
             <div className="flex items-center gap-2 shrink-0">
@@ -413,24 +411,53 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="mt-6 pt-4 border-t flex flex-col md:grid md:grid-cols-4 items-center gap-3">
-          <div className="md:col-span-3 flex flex-col md:flex-row items-center gap-3 md:gap-8 justify-start w-full">
-            <p className="text-[9px] font-bold text-muted-foreground/40 uppercase tracking-tight md:tracking-[0.4em] whitespace-nowrap">
-              {platform.copyright}
-            </p>
+        <div className="mt-4 md:mt-6 pt-4 border-t">
+          {/* Desktop - manter layout original */}
+          <div className="hidden md:flex md:grid md:grid-cols-4 items-center gap-3">
+            <div className="md:col-span-3 flex flex-row items-center gap-3 md:gap-8 justify-start w-full">
+              <p className="text-[9px] font-bold text-muted-foreground/40 uppercase tracking-tight md:tracking-[0.4em] whitespace-nowrap">
+                {platform.copyright}
+              </p>
 
-            <Link
-              href={platform.termsUrl}
-              className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.2em] text-primary hover:text-primary/70 transition-colors leading-none"
-            >
-              <ShieldCheck size={11} />
-              Termos de Uso & LGPD
-            </Link>
+              <Link
+                href={platform.termsUrl}
+                className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.2em] text-primary hover:text-primary/70 transition-colors leading-none"
+              >
+                <ShieldCheck size={11} />
+                Termos de Uso & LGPD
+              </Link>
+            </div>
+
+            <div className="md:col-span-1 flex justify-center md:justify-end w-full">
+              <div className="flex items-center justify-center px-2.5 h-6 rounded-full bg-primary/5 border border-primary/10">
+                <span className="text-[9px] font-black text-primary uppercase tracking-widest leading-none">
+                  {currentVersion}
+                </span>
+              </div>
+            </div>
           </div>
 
-          <div className="md:col-span-1 flex justify-center md:justify-end w-full">
-            <div className="flex items-center justify-center px-2.5 h-6 rounded-full bg-primary/5 border border-primary/10">
-              <span className="text-[9px] font-black text-primary uppercase tracking-widest leading-none">
+          {/* Mobile - linha única condensada com versão à direita */}
+          <div className="md:hidden flex flex-row items-center justify-between w-full gap-2">
+            <div className="flex flex-row items-center gap-1.5 flex-1 min-w-0 overflow-hidden">
+              <span className="text-[9px] font-bold text-muted-foreground/40 uppercase tracking-tight whitespace-nowrap">
+                © {new Date().getFullYear()} Ecosol
+              </span>
+              <span className="text-[7px] text-muted-foreground/40 shrink-0">•</span>
+              <span className="text-[9px] font-bold text-muted-foreground/40 uppercase tracking-tight whitespace-nowrap">
+                Economia Solidária
+              </span>
+              <Link
+                href={platform.termsUrl}
+                className="flex items-center gap-1 text-[9px] font-black uppercase tracking-[0.15em] text-primary hover:text-primary/70 transition-colors leading-none whitespace-nowrap"
+              >
+                <ShieldCheck size={8} />
+                <span>Termos de Uso & LGPD</span>
+              </Link>
+            </div>
+            
+            <div className="flex items-center justify-center px-2 h-5 rounded-full bg-primary/5 border border-primary/10 shrink-0 ml-2">
+              <span className="text-[8px] font-black text-primary uppercase tracking-widest leading-none">
                 {currentVersion}
               </span>
             </div>

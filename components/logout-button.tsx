@@ -24,11 +24,11 @@ export default function LogoutButton({ mobile = false, className = "" }: LogoutB
       <Button
         variant="destructive"
         size="sm"
-        className={`h-9 rounded-xl font-black text-[10px] uppercase tracking-widest gap-2 shadow-destructive/10 hover:shadow-destructive/20 px-2.5 ${className}`}
+        className={`h-11 rounded-xl font-black text-[10px] uppercase tracking-widest gap-2 shadow-destructive/10 hover:shadow-destructive/20 px-3 ${className}`}
         onClick={handleLogout}
         title="Encerrar Sessão"
       >
-        <LogOut className="w-4 h-4" />
+        <LogOut className="w-5 h-5" />
       </Button>
     );
   }
