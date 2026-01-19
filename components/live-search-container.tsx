@@ -74,11 +74,11 @@ export default function LiveSearchContainer({
     const updateItemsPerPage = () => {
       const width = window.innerWidth;
       if (width < 640) {
-        setItemsPerPage(6); // 2 colunas × 3 linhas
+        setItemsPerPage(6);
       } else if (width < 1024) {
-        setItemsPerPage(8); // 2 colunas × 4 linhas
+        setItemsPerPage(8);
       } else {
-        setItemsPerPage(12); // 3 colunas × 4 linhas
+        setItemsPerPage(12);
       }
     };
 
@@ -107,14 +107,13 @@ export default function LiveSearchContainer({
 
   /**
    * FUNÇÃO handlePageChange:
-   * Em vez de travas de altura porcas ou ghosts, esta função garante
-   * que o usuário seja levado suavemente ao topo da lista ao trocar de página.
+   * Garante o scroll suave para o topo e atualiza o estado
    */
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
     
     if (topAnchorRef.current) {
-      const yOffset = -120; // Margem para não bater no Header fixo
+      const yOffset = -120;
       const y = topAnchorRef.current.getBoundingClientRect().top + window.pageYOffset + yOffset;
       window.scrollTo({ top: y, behavior: "smooth" });
     }
@@ -127,7 +126,7 @@ export default function LiveSearchContainer({
     }
   }, [searchTerm, selectedCategory, isInitialPageLoad]);
 
-  // Busca e filtragem (Sua lógica integral preservada)
+  // Busca e filtragem (Lógica integral preservada)
   React.useEffect(() => {
     const performUpdate = async () => {
       if (abortControllerRef.current) {
@@ -152,10 +151,7 @@ export default function LiveSearchContainer({
         return matchesCategory && matchesSearch;
       });
 
-      const currentIds = localFiltered
-        .map((s) => s.id)
-        .sort()
-        .join(",");
+      const currentIds = localFiltered.map((s) => s.id).sort().join(",");
 
       if (currentIds !== lastUpdateIds.current) {
         setServices(localFiltered);
@@ -174,45 +170,30 @@ export default function LiveSearchContainer({
             category: selectedCategory,
           });
 
-          const response = await fetch(
-            `/api/search?${queryParams.toString()}`,
-            {
-              signal: newAbortController.signal,
-            }
-          );
+          const response = await fetch(`/api/search?${queryParams.toString()}`, {
+            signal: newAbortController.signal,
+          });
 
-          if (!response.ok) {
-            throw new Error("Falha na resposta do servidor");
-          }
+          if (!response.ok) throw new Error("Falha na resposta");
 
           const serverData: ServiceItem[] = await response.json();
 
           const sortedServerData = [...serverData].sort((a, b) => {
             const indexA = masterOrder.findIndex((m) => m.id === a.id);
             const indexB = masterOrder.findIndex((m) => m.id === b.id);
-
             if (indexA === -1) return 1;
             if (indexB === -1) return -1;
-
             return indexA - indexB;
           });
 
-          const serverIds = sortedServerData
-            .map((s) => s.id)
-            .sort()
-            .join(",");
+          const serverIds = sortedServerData.map((s) => s.id).sort().join(",");
 
           if (serverIds !== lastUpdateIds.current) {
             setServices(sortedServerData);
             lastUpdateIds.current = serverIds;
           }
         } catch (err: unknown) {
-          const name =
-            typeof err === "object" && err !== null && "name" in err
-              ? (err as { name?: unknown }).name
-              : undefined;
-          const isAbort = typeof name === "string" && name === "AbortError";
-          if (!isAbort) {
+          if ((err as any)?.name !== "AbortError") {
             console.error("Erro na busca remota:", err);
             setSearchError("Não foi possível sincronizar os dados.");
           }
@@ -220,10 +201,7 @@ export default function LiveSearchContainer({
           setIsSearching(false);
         }
       } else {
-        const masterIds = masterOrder
-          .map((s) => s.id)
-          .sort()
-          .join(",");
+        const masterIds = masterOrder.map((s) => s.id).sort().join(",");
         if (lastUpdateIds.current !== masterIds) {
           setServices(masterOrder);
           lastUpdateIds.current = masterIds;
@@ -236,9 +214,7 @@ export default function LiveSearchContainer({
 
     return () => {
       clearTimeout(timeoutId);
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
+      if (abortControllerRef.current) abortControllerRef.current.abort();
     };
   }, [searchTerm, selectedCategory, masterOrder]);
 
@@ -246,8 +222,7 @@ export default function LiveSearchContainer({
   const totalItems = services.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
-  const paginatedServices = services.slice(startIndex, endIndex);
+  const paginatedServices = services.slice(startIndex, startIndex + itemsPerPage);
 
   // Ajustar página atual se necessário
   React.useEffect(() => {
@@ -258,7 +233,6 @@ export default function LiveSearchContainer({
 
   return (
     <div className="w-full flex flex-col transition-colors duration-300">
-      {/* ÂNCORA DE SCROLL PARA NAVEGAÇÃO FLUIDA */}
       <div ref={topAnchorRef} className="scroll-mt-24" />
 
       <section className="flex flex-col items-center py-3 gap-3">
@@ -284,43 +258,56 @@ export default function LiveSearchContainer({
         />
       </div>
 
+      {/* ANIMAÇÃO REESTRUTURADA:
+          Usando mode="popLayout" no grid para permitir transições fluidas entre cards
+      */}
       <div 
         ref={containerRef}
-        className="mt-3 mb-6"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 mt-3 mb-6 min-h-[400px]"
         style={{ overflowAnchor: 'none' }} 
       >
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentPage + selectedCategory + searchTerm}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5"
-          >
-            {isInitialPageLoad ? (
-              Array.from({ length: itemsPerPage }).map((_, i) => (
-                <ServiceSkeleton key={`skeleton-${i}`} />
-              ))
-            ) : services.length === 0 && !isSearching ? (
+        <AnimatePresence mode="popLayout" initial={false}>
+          {isInitialPageLoad ? (
+            Array.from({ length: itemsPerPage }).map((_, i) => (
               <motion.div
-                key="empty-state"
-                initial={{ opacity: 0, translateY: 20 }}
-                animate={{ opacity: 1, translateY: 0 }}
-                exit={{ opacity: 0, translateY: -20 }}
-                className="col-span-full text-center py-12 bg-card rounded-xl border border-dashed border-border"
+                key={`skeleton-${i}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
               >
-                <div className="text-3xl mb-3 grayscale opacity-30">🔍</div>
-                <p className="text-muted-foreground font-black text-[10px] uppercase tracking-[0.3em]">
-                  {searchError || "Nenhum resultado encontrado para sua busca"}
-                </p>
+                <ServiceSkeleton />
               </motion.div>
-            ) : (
-              paginatedServices.map((service) => (
-                <ServiceCard key={service.id} service={service} />
-              ))
-            )}
-          </motion.div>
+            ))
+          ) : services.length === 0 && !isSearching ? (
+            <motion.div
+              key="empty-state"
+              initial={{ opacity: 0, translateY: 20 }}
+              animate={{ opacity: 1, translateY: 0 }}
+              exit={{ opacity: 0, translateY: -20 }}
+              className="col-span-full text-center py-12 bg-card rounded-xl border border-dashed border-border"
+            >
+              <div className="text-3xl mb-3 grayscale opacity-30">🔍</div>
+              <p className="text-muted-foreground font-black text-[10px] uppercase tracking-[0.3em]">
+                {searchError || "Nenhum resultado encontrado para sua busca"}
+              </p>
+            </motion.div>
+          ) : (
+            paginatedServices.map((service) => (
+              <motion.div
+                key={service.id}
+                layout="position" // Essencial para o deslizamento suave entre posições
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ 
+                  duration: 0.25,
+                  layout: { duration: 0.3, ease: "easeOut" } 
+                }}
+              >
+                <ServiceCard service={service} />
+              </motion.div>
+            ))
+          )}
         </AnimatePresence>
       </div>
 
