@@ -452,7 +452,7 @@ export default function Footer() {
                 className="flex items-center gap-1 text-[9px] font-black uppercase tracking-[0.15em] text-primary hover:text-primary/70 transition-colors leading-none whitespace-nowrap"
               >
                 <ShieldCheck size={8} />
-                <span>Termos de Uso & LGPD</span>
+                <span>Termos de Uso</span>
               </Link>
             </div>
             
