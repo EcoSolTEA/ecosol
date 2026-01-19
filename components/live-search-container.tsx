@@ -253,49 +253,36 @@ export default function LiveSearchContainer({
         />
       </div>
 
-      {/* Grid de cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 mt-3 mb-6 min-h-[500px]"
-        style={{ overflowAnchor: 'none' }}
-        >
-        <AnimatePresence mode="popLayout" initial={false}>
-          {isInitialPageLoad ? (
-            Array.from({ length: itemsPerPage }).map((_, i) => (
-              <motion.div
-                key={`skeleton-${i}`}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
-                <ServiceSkeleton />
-              </motion.div>
-            ))
-          ) : services.length === 0 && !isSearching ? (
-            <motion.div
-              key="empty-state"
-              initial={{ opacity: 0, translateY: 20 }}
-              animate={{ opacity: 1, translateY: 0 }}
-              exit={{ opacity: 0, translateY: -20 }}
-              className="col-span-full text-center py-12 bg-card rounded-xl border border-dashed border-border"
-            >
-              <div className="text-3xl mb-3 grayscale opacity-30">🔍</div>
-              <p className="text-muted-foreground font-black text-[10px] uppercase tracking-[0.3em]">
-                {searchError || "Nenhum resultado encontrado para sua busca"}
-              </p>
-            </motion.div>
-          ) : (
-            paginatedServices.map((service) => (
-              <motion.div
-                key={service.id}
-                layout="position"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                <ServiceCard service={service} />
-              </motion.div>
-            ))
-          )}
+      {/* Grid de cards - Estabilizado para Produção */}
+      <div 
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 mt-3 mb-6 min-h-[600px]"
+        style={{ overflowAnchor: 'none' }} 
+      >
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentPage + selectedCategory + searchTerm} // Chave única para o bloco inteiro
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+            className="col-span-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5"
+          >
+            {isInitialPageLoad ? (
+              Array.from({ length: itemsPerPage }).map((_, i) => (
+                <ServiceSkeleton key={`skeleton-${i}`} />
+              ))
+            ) : services.length === 0 && !isSearching ? (
+              <div className="col-span-full text-center py-12 bg-card rounded-xl border border-dashed border-border">
+                <p className="text-muted-foreground font-black text-[10px] uppercase tracking-[0.3em]">
+                  Nenhum resultado encontrado
+                </p>
+              </div>
+            ) : (
+              paginatedServices.map((service) => (
+                <ServiceCard key={service.id} service={service} />
+              ))
+            )}
+          </motion.div>
         </AnimatePresence>
       </div>
 
