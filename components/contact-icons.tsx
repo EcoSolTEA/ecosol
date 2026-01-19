@@ -3,10 +3,9 @@
 
 import * as React from "react";
 import { MessageCircle, Globe, Mail, Music2 } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 interface ContactIconsProps {
-  contacts: {
+  contacts?: {
     whatsapp?: string;
     instagram?: string;
     tiktok?: string;
@@ -16,7 +15,7 @@ interface ContactIconsProps {
   skeleton?: boolean;
 }
 
-function InstagramIcon({ size = 18 }: { size?: number }) {
+function InstagramIcon({ size = 20 }: { size?: number }) {
   return (
     <svg
       width={size}
@@ -25,18 +24,20 @@ function InstagramIcon({ size = 18 }: { size?: number }) {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden="true"
+      className="stroke-current"
+      style={{ strokeWidth: 2 }}
     >
       <rect
-        x="3"
-        y="3"
-        width="18"
-        height="18"
-        rx="5"
+        x="2.5"
+        y="2.5"
+        width="19"
+        height="19"
+        rx="5.5"
         stroke="currentColor"
-        strokeWidth="1.6"
+        strokeWidth="1.8"
       />
-      <circle cx="12" cy="12" r="3.2" stroke="currentColor" strokeWidth="1.6" />
-      <circle cx="17.5" cy="6.5" r="0.6" fill="currentColor" />
+      <circle cx="12" cy="12" r="3.8" stroke="currentColor" strokeWidth="1.8" />
+      <circle cx="17.5" cy="6.5" r="0.8" fill="currentColor" />
     </svg>
   );
 }
@@ -56,9 +57,10 @@ function ContactLink({
     return (
       <div
         title={title}
-        className="inline-flex items-center justify-center h-9 w-9 rounded-xl bg-muted text-muted-foreground border border-border animate-pulse"
+        className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-muted border border-border animate-pulse"
+        aria-hidden="true"
       >
-        <div className="h-4 w-4 bg-muted-foreground/20 rounded" />
+        <div className="h-5 w-5 bg-muted-foreground/20 rounded" />
       </div>
     );
   }
@@ -67,9 +69,10 @@ function ContactLink({
     <a
       href={href}
       target="_blank"
-      rel="noreferrer"
+      rel="noreferrer noopener"
       title={title}
-      className="inline-flex items-center justify-center h-9 w-9 rounded-xl bg-muted text-muted-foreground border border-border hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-all duration-200 active:scale-90"
+      className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-muted text-muted-foreground border border-border hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-all duration-200 active:scale-90"
+      onClick={(e) => e.stopPropagation()}
     >
       {children}
     </a>
@@ -86,7 +89,7 @@ export default function ContactIcons({
     {
       key: "whatsapp",
       title: "WhatsApp",
-      icon: <MessageCircle size={18} strokeWidth={2.5} />,
+      icon: <MessageCircle size={20} strokeWidth={2.2} />,
       value: contacts?.whatsapp,
       href: contacts?.whatsapp
         ? `https://wa.me/${contacts.whatsapp.replace(/\D/g, "")}`
@@ -95,7 +98,7 @@ export default function ContactIcons({
     {
       key: "instagram",
       title: "Instagram",
-      icon: <InstagramIcon size={18} />,
+      icon: <InstagramIcon size={22} />,
       value: contacts?.instagram,
       href: contacts?.instagram
         ? `https://instagram.com/${contacts.instagram.replace("@", "")}`
@@ -104,7 +107,7 @@ export default function ContactIcons({
     {
       key: "tiktok",
       title: "TikTok",
-      icon: <Music2 size={18} strokeWidth={2.5} />,
+      icon: <Music2 size={20} strokeWidth={2.2} />,
       value: contacts?.tiktok,
       href: contacts?.tiktok
         ? `https://tiktok.com/@${contacts.tiktok.replace("@", "")}`
@@ -113,14 +116,14 @@ export default function ContactIcons({
     {
       key: "email",
       title: "E-mail",
-      icon: <Mail size={18} strokeWidth={2.5} />,
+      icon: <Mail size={20} strokeWidth={2.2} />,
       value: contacts?.email,
       href: contacts?.email ? `mailto:${contacts.email}` : undefined,
     },
     {
       key: "site",
       title: "Site Oficial",
-      icon: <Globe size={18} strokeWidth={2.5} />,
+      icon: <Globe size={20} strokeWidth={2.2} />,
       value: contacts?.site,
       href: contacts?.site
         ? contacts.site.startsWith("http")
@@ -131,13 +134,13 @@ export default function ContactIcons({
   ];
 
   const visibleContacts = skeleton
-    ? contactTypes // Em skeleton, mostra todos
-    : contactTypes.filter((contact) => contact.value); // Em normal, mostra apenas os com valor
+    ? contactTypes
+    : contactTypes.filter((contact) => contact.value);
 
-  if (visibleContacts.length === 0) return null;
+  if (visibleContacts.length === 0 && !skeleton) return null;
 
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-1 pl-0.5">
       {visibleContacts.map((contact) => (
         <ContactLink
           key={contact.key}

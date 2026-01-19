@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import Header from "@/components/header";
 import LiveSearchContainer from "@/components/live-search-container";
+import Banner from "@/components/banner";
 
 // Forçamos o Next.js a ignorar qualquer cache de rota ou de dados
 export const dynamic = "force-dynamic";
@@ -53,6 +54,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
   return (
     <div className="min-h-screen bg-background text-foreground pb-10 transition-colors duration-300">
       <Header />
+      <Banner />
       
       <main className="mx-auto max-w-6xl px-6 py-4">
         {/* Passamos os serviços já embaralhados pelo servidor.

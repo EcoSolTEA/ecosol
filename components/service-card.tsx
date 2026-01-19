@@ -1,11 +1,25 @@
+// components/service-cards.tsx
 "use client";
 
 import Image from "next/image";
-import { Button } from "./ui/button";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useRef, useState, useEffect } from "react";
 import ContactIcons from "./contact-icons";
-import { Card } from "./ui/card";
-import { ArrowUpRight } from "lucide-react";
+import { 
+  Card, 
+  CardContent, 
+  CardImageContainer,
+  CardTitleDescription,
+  CardFooter,
+  CardCategory,
+  CardProfileIndicator
+} from "./ui/card";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 type Service = {
   id: string;
@@ -19,6 +33,7 @@ type Service = {
   email?: string | null;
   site?: string | null;
 };
+
 export default function ServiceCard({
   service,
   eager,
@@ -26,63 +41,144 @@ export default function ServiceCard({
   service: Service;
   eager?: boolean;
 }) {
+  const router = useRouter();
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const descRef = useRef<HTMLParagraphElement>(null);
+  const [needsTitleTooltip, setNeedsTitleTooltip] = useState(false);
+  const [needsDescTooltip, setNeedsDescTooltip] = useState(false);
+
+  // Função para verificar se o texto está truncado
+  const isTextTruncated = (element: HTMLElement | null) => {
+    if (!element) return false;
+    return element.scrollWidth > element.clientWidth || 
+           element.scrollHeight > element.clientHeight;
+  };
+
+  // Verificar se o texto está truncado após renderização
+  useEffect(() => {
+    const checkTruncation = () => {
+      setNeedsTitleTooltip(isTextTruncated(titleRef.current));
+      if (service.description) {
+        setNeedsDescTooltip(isTextTruncated(descRef.current));
+      }
+    };
+
+    // Verificar após um pequeno delay para garantir que o DOM está renderizado
+    const timeoutId = setTimeout(checkTruncation, 0);
+    window.addEventListener("resize", checkTruncation);
+    
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener("resize", checkTruncation);
+    };
+  }, [service.description]);
+
+  const handleCardClick = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.closest('a') || target.closest('button')) {
+      return;
+    }
+    router.push(`/provider/${service.id}`);
+  };
+
   return (
-    <Card className="flex flex-col h-full border-border hover:border-primary/40 transition-all duration-300 p-3.5 shadow-sm group">
-      {/* Imagem */}
-      <div className="relative aspect-video rounded-[1.6rem] bg-muted overflow-hidden border border-border mb-2.5">
-        <Image
-          src={service.image || "/ecosol-meta.png"}
-          alt={service.name}
-          fill
-          sizes="(max-width: 640px) 100vw, 50vw"
-          loading={eager ? "eager" : undefined}
-          className="object-cover group-hover:scale-105 transition-transform duration-500"
-        />
-      </div>
+    <TooltipProvider>
+      <Card 
+        clickable
+        onClick={handleCardClick}
+        className="group"
+      >
+        <CardContent>
+          <CardImageContainer>
+            <Image
+              src={service.image || "/ecosol-meta.png"}
+              alt={service.name}
+              fill
+              sizes="(max-width: 640px) 100vw, 50vw"
+              priority={eager}
+              className="object-cover group-hover:scale-105 transition-transform duration-500"
+              style={{
+                objectPosition: 'center center',
+              }}
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.src = "/ecosol-meta.png";
+              }}
+            />
+          </CardImageContainer>
 
-      {/* Título e descrição */}
-      <div className="flex-1 px-0.5">
-        <h3 className="text-base font-black text-foreground leading-tight uppercase tracking-tight">
-          {service.name}
-        </h3>
-        {service.description && (
-          <p className="text-muted-foreground text-[10px] line-clamp-2 leading-tight font-medium mt-0.5 opacity-90">
-            {service.description}
-          </p>
-        )}
-      </div>
+          <CardTitleDescription>
+            {needsTitleTooltip ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <h3 
+                    ref={titleRef}
+                    className="text-sm md:text-base font-black text-foreground leading-tight uppercase tracking-tight line-clamp-2 group-hover:text-primary transition-colors duration-300 mb-1"
+                  >
+                    {service.name}
+                  </h3>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="max-w-xs break-words">{service.name}</p>
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <h3 
+                ref={titleRef}
+                className="text-sm md:text-base font-black text-foreground leading-tight uppercase tracking-tight line-clamp-2 group-hover:text-primary transition-colors duration-300 mb-1"
+              >
+                {service.name}
+              </h3>
+            )}
+            
+            {service.description && (
+              needsDescTooltip ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <p 
+                      ref={descRef}
+                      className="text-[9px] md:text-[10px] text-muted-foreground line-clamp-2 leading-tight font-medium opacity-90 group-hover:opacity-100 transition-opacity duration-300"
+                    >
+                      {service.description}
+                    </p>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="max-w-xs break-words">{service.description}</p>
+                  </TooltipContent>
+                </Tooltip>
+              ) : (
+                <p 
+                  ref={descRef}
+                  className="text-[9px] md:text-[10px] text-muted-foreground line-clamp-2 leading-tight font-medium opacity-90 group-hover:opacity-100 transition-opacity duration-300"
+                >
+                  {service.description}
+                </p>
+              )
+            )}
+          </CardTitleDescription>
 
-      {/* Rodapé estruturado */}
-      <div className="mt-3 pt-3 border-t border-border space-y-3">
-        {/* Linha Superior: Categoria + Perfil */}
-        <div className="flex items-center justify-between">
-          <span className="text-[7px] font-black text-primary uppercase tracking-[0.2em] px-2 py-1 bg-primary/10 rounded-md">
-            {service.category}
-          </span>
+          <CardFooter>
+            <div className="flex items-center justify-between">
+              <CardCategory>
+                {service.category}
+              </CardCategory>
+              <CardProfileIndicator />
+            </div>
 
-          <Link href={`/provider/${service.id}`}>
-            <Button
-              variant="ghost"
-              className="h-6 px-2 rounded-lg text-primary font-black text-[9px] uppercase tracking-widest hover:bg-primary/10 transition-colors"
-            >
-              Perfil <ArrowUpRight className="ml-1 h-3 w-3" />
-            </Button>
-          </Link>
-        </div>
-
-        {/* Linha Inferior: Ícones de Contato (agora com espaço total) */}
-        <div className="flex items-center">
-          <ContactIcons
-            contacts={{
-              whatsapp: service.whatsapp ?? undefined,
-              instagram: service.instagram ?? undefined,
-              tiktok: service.tiktok ?? undefined,
-              email: service.email ?? undefined,
-              site: service.site ?? undefined,
-            }}
-          />
-        </div>
-      </div>
-    </Card>
+            <div className="flex items-center pt-1">
+              <ContactIcons
+                contacts={{
+                  whatsapp: service.whatsapp ?? undefined,
+                  instagram: service.instagram ?? undefined,
+                  tiktok: service.tiktok ?? undefined,
+                  email: service.email ?? undefined,
+                  site: service.site ?? undefined,
+                }}
+              />
+            </div>
+          </CardFooter>
+        </CardContent>
+      </Card>
+    </TooltipProvider>
   );
 }

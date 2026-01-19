@@ -1,13 +1,14 @@
+// components/live-search-container.tsx (versão simplificada)
 "use client";
 
 import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import SearchBar from "./search-bar";
 import ServiceCard from "./service-card";
-import ServiceCardImage from "./service-card-image";
 import CategoryFilter from "./category-filter";
 import ServiceSkeleton from "./service-skeleton";
-// Use a lightweight client-side type for services to avoid importing server-only Prisma types
+import { Pagination } from "./ui/pagination";
+
 type ServiceItem = {
   id: string;
   name: string;
@@ -23,7 +24,6 @@ type ServiceItem = {
   suspended?: boolean;
   [key: string]: unknown;
 };
-// import { Carousel } from "@/components/ui/carousel";
 
 interface CategoryData {
   name: string;
@@ -53,27 +53,32 @@ export default function LiveSearchContainer({
   const [isSearching, setIsSearching] = React.useState(false);
   const [isInitialPageLoad, setIsInitialPageLoad] = React.useState(true);
   const [searchError, setSearchError] = React.useState<string | null>(null);
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const [itemsPerPage, setItemsPerPage] = React.useState(5);
 
   const lastUpdateIds = React.useRef<string>("");
   const abortControllerRef = React.useRef<AbortController | null>(null);
 
-  const SERVICES_TO_SHOW_IN_CAROUSEL = 6;
+  // Calcular itens por página responsivamente
+  React.useEffect(() => {
+    const updateItemsPerPage = () => {
+      const width = window.innerWidth;
+      if (width < 640) {
+        setItemsPerPage(5);
+      } else if (width < 1024) {
+        setItemsPerPage(8);
+      } else {
+        setItemsPerPage(12);
+      }
+      setCurrentPage(1); // Resetar para primeira página ao redimensionar
+    };
 
-  const carouselServices = React.useMemo(() => {
-    if (services.length === 0) return [];
-    return services.slice(0, SERVICES_TO_SHOW_IN_CAROUSEL);
-  }, [services]);
+    updateItemsPerPage();
+    window.addEventListener("resize", updateItemsPerPage);
+    return () => window.removeEventListener("resize", updateItemsPerPage);
+  }, []);
 
-  const hasEnoughServicesForCarousel = React.useMemo(() => {
-    const isSearchActive = searchTerm !== "" || selectedCategory !== "Todas";
-    // Detect mobile to relax the minimum required services for the carousel
-    const isClient = typeof window !== "undefined";
-    const isMobileView = isClient ? window.innerWidth < 768 : false;
-    const threshold = isMobileView ? 1 : SERVICES_TO_SHOW_IN_CAROUSEL;
-
-    return services.length >= threshold && !isSearchActive && !isSearching;
-  }, [services.length, isSearching, searchTerm, selectedCategory]);
-
+  // Inicialização
   React.useEffect(() => {
     const shuffled = shuffleArray(initialServices);
     setMasterOrder(shuffled);
@@ -86,6 +91,12 @@ export default function LiveSearchContainer({
     return () => clearTimeout(timer);
   }, [initialServices]);
 
+  // Resetar página quando busca/filtro mudar
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedCategory]);
+
+  // Busca e filtragem (mantido igual)
   React.useEffect(() => {
     const performUpdate = async () => {
       if (abortControllerRef.current) {
@@ -165,7 +176,6 @@ export default function LiveSearchContainer({
             lastUpdateIds.current = serverIds;
           }
         } catch (err: unknown) {
-          // Safely check for an AbortError without assuming the type of `err`
           const name =
             typeof err === "object" && err !== null && "name" in err
               ? (err as { name?: unknown }).name
@@ -201,8 +211,22 @@ export default function LiveSearchContainer({
     };
   }, [searchTerm, selectedCategory, masterOrder]);
 
+  // Cálculos finais
+  const totalItems = services.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+  const paginatedServices = services.slice(startIndex, endIndex);
+
+  React.useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
+
   return (
     <div className="w-full flex flex-col transition-colors duration-300">
+      {/* Header */}
       <section className="flex flex-col items-center py-2 gap-3">
         <div className="text-center space-y-0">
           <h1 className="text-2xl font-bold text-foreground tracking-tighter uppercase leading-none">
@@ -215,6 +239,7 @@ export default function LiveSearchContainer({
         </div>
       </section>
 
+      {/* Filtro de categorias */}
       <div className="py-1 border-b border-border mb-0">
         <CategoryFilter
           categories={categories}
@@ -223,36 +248,22 @@ export default function LiveSearchContainer({
         />
       </div>
 
-      {/* <AnimatePresence>
-        {hasEnoughServicesForCarousel && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="mt-0 mb-0 overflow-hidden"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-foreground">Destaques</h2>
-              <span className="text-xs text-muted-foreground uppercase font-black tracking-widest">
-                {carouselServices.length} serviços em destaque
-              </span>
-            </div>
-            <Carousel>
-              {carouselServices.map((service) => (
-                <ServiceCardImage
-                  key={`carousel-${service.id}`}
-                  service={service}
-                />
-              ))}
-            </Carousel>
-          </motion.div>
-        )}
-      </AnimatePresence> */}
+      {/* Contador de resultados
+      {!isInitialPageLoad && (
+        <div className="flex items-center justify-between py-4 px-2">
+          <div className="text-sm text-muted-foreground">
+            {totalItems} resultado{totalItems !== 1 ? 's' : ''}
+            {searchTerm && ` para "${searchTerm}"`}
+            {selectedCategory !== "Todas" && ` em "${selectedCategory}"`}
+          </div>
+        </div>
+      )} */}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 mt-4 relative">
+      {/* Grid de cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mt-2 mb-8 min-h-[400px]">
         <AnimatePresence mode="popLayout" initial={false}>
           {isInitialPageLoad ? (
-            Array.from({ length: 6 }).map((_, i) => (
+            Array.from({ length: itemsPerPage }).map((_, i) => (
               <motion.div
                 key={`skeleton-${i}`}
                 initial={{ opacity: 0 }}
@@ -268,7 +279,7 @@ export default function LiveSearchContainer({
               initial={{ opacity: 0, translateY: 20 }}
               animate={{ opacity: 1, translateY: 0 }}
               exit={{ opacity: 0, translateY: -20 }}
-              className="col-span-full text-center py-16 bg-card rounded-[2.5rem] border border-dashed border-border"
+              className="col-span-full text-center py-16 bg-card rounded-2xl md:rounded-[2.5rem] border border-dashed border-border"
             >
               <div className="text-3xl mb-3 grayscale opacity-30">🔍</div>
               <p className="text-muted-foreground font-black text-[10px] uppercase tracking-[0.3em]">
@@ -276,42 +287,14 @@ export default function LiveSearchContainer({
               </p>
             </motion.div>
           ) : (
-            services.map((service) => (
+            paginatedServices.map((service) => (
               <motion.div
                 key={service.id}
                 layout="position"
-                initial={{
-                  opacity: 0,
-                  scale: 1,
-                  z: 0,
-                }}
-                animate={{
-                  opacity: 1,
-                  scale: 1,
-                  z: 0,
-                }}
-                exit={{
-                  opacity: 0,
-                  scale: 0.9,
-                  z: -1,
-                  transition: {
-                    duration: 0.2,
-                    ease: "easeIn",
-                  },
-                }}
-                transition={{
-                  type: "tween",
-                  ease: "circOut",
-                  duration: 0.35,
-                  layout: {
-                    duration: 0.35,
-                    ease: "circOut",
-                  },
-                }}
-                style={{
-                  transformOrigin: "center center",
-                  backfaceVisibility: "hidden",
-                }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
               >
                 <ServiceCard service={service} />
               </motion.div>
@@ -319,6 +302,21 @@ export default function LiveSearchContainer({
           )}
         </AnimatePresence>
       </div>
+
+      {/* Paginação - agora com espaço extra no fundo para mobile */}
+      {totalPages > 1 && (
+        <>
+          <div className="h-16 sm:h-8" /> {/* Espaço para o sticky mobile */}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setCurrentPage}
+            isSearching={isSearching}
+          />
+        </>
+      )}
     </div>
   );
 }
