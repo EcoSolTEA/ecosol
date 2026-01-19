@@ -22,9 +22,9 @@ export default function LogoutButton({ mobile = false, className = "" }: LogoutB
   if (mobile) {
     return (
       <Button
-        variant="outline"
+        variant="destructive"
         size="sm"
-        className={`h-9 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-muted px-2.5 ${className}`}
+        className={`h-9 rounded-xl font-black text-[10px] uppercase tracking-widest gap-2 shadow-destructive/10 hover:shadow-destructive/20 px-2.5 ${className}`}
         onClick={handleLogout}
         title="Encerrar Sessão"
       >
@@ -35,9 +35,9 @@ export default function LogoutButton({ mobile = false, className = "" }: LogoutB
 
   return (
     <Button
-      variant="outline"
+      variant="destructive"
       size="sm"
-      className={`h-10 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-muted px-4 ${className}`}
+      className={`h-10 rounded-xl font-black text-[10px] uppercase tracking-widest gap-2 shadow-destructive/10 hover:shadow-destructive/20 px-4 ${className}`}
       onClick={handleLogout}
     >
       <LogOut className="w-4 h-4" />
