@@ -108,12 +108,11 @@ export default function LiveSearchContainer({
   // Função handlePageChange: Trava a altura antes de mudar o estado
   const handlePageChange = (page: number) => {
     if (containerRef.current) {
-      // Captura a altura exata do momento para evitar que o rodapé suba
       setLockedHeight(containerRef.current.offsetHeight);
     }
     setCurrentPage(page);
     
-    // Libera a altura após a animação de entrada completar (aprox 400ms)
+    // Libera a trava após a animação
     setTimeout(() => setLockedHeight("auto"), 500);
   };
 
@@ -124,7 +123,7 @@ export default function LiveSearchContainer({
     }
   }, [searchTerm, selectedCategory, isInitialPageLoad]);
 
-  // Busca e filtragem (Lógica Original de 300+ linhas preservada)
+  // Busca e filtragem
   React.useEffect(() => {
     const performUpdate = async () => {
       if (abortControllerRef.current) {
@@ -246,6 +245,10 @@ export default function LiveSearchContainer({
   const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
   const paginatedServices = services.slice(startIndex, endIndex);
 
+  // Lógica de Preenchimento (Ghost Slots) para estabilidade de altura
+  const emptySlotsCount = itemsPerPage - paginatedServices.length;
+  const ghostSlots = Array.from({ length: Math.max(0, emptySlotsCount) });
+
   // Ajustar página atual se necessário
   React.useEffect(() => {
     if (totalPages > 0 && currentPage > totalPages) {
@@ -278,12 +281,11 @@ export default function LiveSearchContainer({
         />
       </div>
 
-      {/* Grid de cards - Otimizado para Produção */}
       <div 
         ref={containerRef}
         className="mt-3 mb-6"
         style={{ 
-          minHeight: lockedHeight, // Trava dinâmica de altura
+          minHeight: lockedHeight, 
           overflowAnchor: 'none' 
         }} 
       >
@@ -294,7 +296,6 @@ export default function LiveSearchContainer({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            /* IMPORTANTE: items-start impede que os cards estiquem para preencher a min-height */
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 items-start"
           >
             {isInitialPageLoad ? (
@@ -315,9 +316,18 @@ export default function LiveSearchContainer({
                 </p>
               </motion.div>
             ) : (
-              paginatedServices.map((service) => (
-                <ServiceCard key={service.id} service={service} />
-              ))
+              <>
+                {paginatedServices.map((service) => (
+                  <ServiceCard key={service.id} service={service} />
+                ))}
+                
+                {/* Ghost Cards: Mantêm a altura do Grid constante em todas as páginas */}
+                {!isSearching && ghostSlots.map((_, i) => (
+                  <div key={`ghost-${i}`} className="opacity-0 pointer-events-none aria-hidden">
+                    <ServiceSkeleton />
+                  </div>
+                ))}
+              </>
             )}
           </motion.div>
         </AnimatePresence>
