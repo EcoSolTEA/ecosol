@@ -85,6 +85,16 @@ export default function ContactIcons({
 }: ContactIconsProps) {
   if (!contacts && !skeleton) return null;
 
+  // Função auxiliar para garantir o DDI 55 no WhatsApp
+  const formatWhatsAppLink = (phone: string) => {
+    let cleaned = phone.replace(/\D/g, "");
+    // Se tiver DDD mas não tiver o 55 (10 ou 11 dígitos), adiciona o prefixo
+    if (cleaned.length >= 10 && cleaned.length <= 11) {
+      cleaned = `55${cleaned}`;
+    }
+    return `https://wa.me/${cleaned}`;
+  };
+
   const contactTypes = [
     {
       key: "whatsapp",
@@ -92,13 +102,13 @@ export default function ContactIcons({
       icon: <MessageCircle size={20} strokeWidth={2.2} />,
       value: contacts?.whatsapp,
       href: contacts?.whatsapp
-        ? `https://wa.me/${contacts.whatsapp.replace(/\D/g, "")}`
+        ? formatWhatsAppLink(contacts.whatsapp)
         : undefined,
     },
     {
       key: "instagram",
       title: "Instagram",
-      icon: <InstagramIcon size={22} />,
+      icon: <InstagramIcon size={22} />, // Mantido em 22 conforme solicitado
       value: contacts?.instagram,
       href: contacts?.instagram
         ? `https://instagram.com/${contacts.instagram.replace("@", "")}`

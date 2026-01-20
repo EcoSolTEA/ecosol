@@ -35,6 +35,7 @@ export default function SearchBar({ onSearch }: SearchBarProps) {
       */}
       <input
         type="text"
+        suppressHydrationWarning
         className="flex-1 bg-transparent h-full ml-3 text-sm font-bold text-foreground 
                    placeholder:text-muted-foreground/60 placeholder:font-medium
                    outline-none border-none ring-0 focus:ring-0 focus:outline-none"

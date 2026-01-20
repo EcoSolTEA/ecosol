@@ -12,8 +12,22 @@ interface WhatsAppButtonProps {
 export default function WhatsAppButton({ phone, providerEmail }: WhatsAppButtonProps) {
   const [loading, setLoading] = React.useState(false);
 
+  const formatWhatsAppLink = (rawPhone: string) => {
+    // 1. Remove tudo que não for número
+    let cleaned = rawPhone.replace(/\D/g, "");
+
+    // 2. Se o número tiver 10 ou 11 dígitos (DDD + Número), adiciona o DDI 55 do Brasil
+    if (cleaned.length >= 10 && cleaned.length <= 11) {
+      cleaned = `55${cleaned}`;
+    }
+
+    return `https://wa.me/${cleaned}`;
+  };
+
   const handleWhatsAppClick = async () => {
     setLoading(true);
+    const whatsappUrl = formatWhatsAppLink(phone);
+
     try {
       // 1. Notificação de interesse
       await fetch("/api/notifications", {
@@ -23,12 +37,11 @@ export default function WhatsAppButton({ phone, providerEmail }: WhatsAppButtonP
       });
 
       // 2. Redirecionamento
-      const cleanPhone = phone.replace(/\D/g, "");
-      window.open(`https://wa.me/${cleanPhone}`, "_blank");
+      window.open(whatsappUrl, "_blank");
     } catch (error) {
       console.error("Erro na notificação:", error);
-      const cleanPhone = phone.replace(/\D/g, "");
-      window.open(`https://wa.me/${cleanPhone}`, "_blank");
+      // Mesmo com erro na notificação, ainda redireciona o usuário
+      window.open(whatsappUrl, "_blank");
     } finally {
       setTimeout(() => setLoading(false), 1000);
     }
@@ -38,7 +51,6 @@ export default function WhatsAppButton({ phone, providerEmail }: WhatsAppButtonP
     <Button 
       onClick={handleWhatsAppClick} 
       disabled={loading}
-      // Revertido para bg-green-600 e text-lg font-bold conforme o original
       className="w-full bg-green-600 hover:bg-green-700 h-12 text-lg font-bold rounded-xl flex gap-2 transition-all active:scale-[0.98]"
     >
       {loading ? (

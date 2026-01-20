@@ -29,15 +29,6 @@ interface CategoryData {
   count: number;
 }
 
-const shuffleArray = <T,>(array: T[]): T[] => {
-  const newArray = [...array];
-  for (let i = newArray.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
-  }
-  return newArray;
-};
-
 export default function LiveSearchContainer({
   initialServices,
   categories,
@@ -45,8 +36,9 @@ export default function LiveSearchContainer({
   initialServices: ServiceItem[];
   categories: CategoryData[];
 }) {
-  const [masterOrder, setMasterOrder] = React.useState<ServiceItem[]>([]);
-  const [services, setServices] = React.useState<ServiceItem[]>([]);
+  // Inicializamos o estado DIRETAMENTE com os dados vindos do servidor (já embaralhados)
+  const [masterOrder, setMasterOrder] = React.useState<ServiceItem[]>(initialServices);
+  const [services, setServices] = React.useState<ServiceItem[]>(initialServices);
   const [searchTerm, setSearchTerm] = React.useState("");
   const [selectedCategory, setSelectedCategory] = React.useState("Todas");
   const [isSearching, setIsSearching] = React.useState(false);
@@ -55,78 +47,65 @@ export default function LiveSearchContainer({
   const [currentPage, setCurrentPage] = React.useState(1);
   const [itemsPerPage, setItemsPerPage] = React.useState(6);
 
-  // --- ENGENHARIA DE ESTABILIDADE (ÂNCORA DE SCROLL) ---
   const containerRef = React.useRef<HTMLDivElement>(null);
   const topAnchorRef = React.useRef<HTMLDivElement>(null);
-
   const lastUpdateIds = React.useRef<string>("");
   const abortControllerRef = React.useRef<AbortController | null>(null);
 
-  // 1. Desativar restauração de scroll automática do navegador
+  // 1. Configuração de Scroll do Navegador
   React.useEffect(() => {
     if ("scrollRestoration" in history) {
       history.scrollRestoration = "manual";
     }
   }, []);
 
-  // Calcular itens por página responsivamente
+  // 2. Calcular itens por página responsivamente
   React.useEffect(() => {
     const updateItemsPerPage = () => {
       const width = window.innerWidth;
-      if (width < 640) {
-        setItemsPerPage(6);
-      } else if (width < 1024) {
-        setItemsPerPage(8);
-      } else {
-        setItemsPerPage(12);
-      }
+      if (width < 640) setItemsPerPage(6);
+      else if (width < 1024) setItemsPerPage(8);
+      else setItemsPerPage(12);
     };
-
     updateItemsPerPage();
-    
-    const handleResize = () => {
-      updateItemsPerPage();
-    };
-
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    window.addEventListener("resize", updateItemsPerPage);
+    return () => window.removeEventListener("resize", updateItemsPerPage);
   }, []);
 
-  // Inicialização
+  // 3. Sincronização de Dados (Ajustada para o Shuffle do Servidor)
   React.useEffect(() => {
-    const shuffled = shuffleArray(initialServices);
-    setMasterOrder(shuffled);
-    setServices(shuffled);
-
-    const timer = setTimeout(() => {
-      setIsInitialPageLoad(false);
-    }, 800);
-
+    // Sincroniza se as props mudarem, mas sem embaralhar no cliente
+    setMasterOrder(initialServices);
+    setServices(initialServices);
+    const timer = setTimeout(() => setIsInitialPageLoad(false), 800);
     return () => clearTimeout(timer);
   }, [initialServices]);
 
-  /**
-   * FUNÇÃO handlePageChange:
-   * Garante o scroll suave para o topo e atualiza o estado
-   */
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    
-    if (topAnchorRef.current) {
-      const yOffset = -120;
-      const y = topAnchorRef.current.getBoundingClientRect().top + window.pageYOffset + yOffset;
-      window.scrollTo({ top: y, behavior: "smooth" });
-    }
-  };
-
-  // Resetar página quando busca/filtro mudar
+  // 4. Lógica de Scroll Determinística
   React.useEffect(() => {
     if (!isInitialPageLoad) {
-      handlePageChange(1);
+      requestAnimationFrame(() => {
+        if (topAnchorRef.current) {
+          const yOffset = -120;
+          const y = topAnchorRef.current.getBoundingClientRect().top + window.pageYOffset + yOffset;
+          window.scrollTo({ top: y, behavior: "smooth" });
+        }
+      });
+    }
+  }, [currentPage, isInitialPageLoad]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  // 5. Resetar página quando busca/filtro mudar
+  React.useEffect(() => {
+    if (!isInitialPageLoad) {
+      setCurrentPage(1);
     }
   }, [searchTerm, selectedCategory, isInitialPageLoad]);
 
-  // Busca e filtragem (Lógica integral preservada)
+  // 6. Busca e filtragem integral (Engenharia Preservada)
   React.useEffect(() => {
     const performUpdate = async () => {
       if (abortControllerRef.current) {
@@ -170,11 +149,14 @@ export default function LiveSearchContainer({
             category: selectedCategory,
           });
 
-          const response = await fetch(`/api/search?${queryParams.toString()}`, {
-            signal: newAbortController.signal,
-          });
+          const response = await fetch(
+            `/api/search?${queryParams.toString()}`,
+            {
+              signal: newAbortController.signal,
+            }
+          );
 
-          if (!response.ok) throw new Error("Falha na resposta");
+          if (!response.ok) throw new Error("Falha na resposta do servidor");
 
           const serverData: ServiceItem[] = await response.json();
 
@@ -193,7 +175,8 @@ export default function LiveSearchContainer({
             lastUpdateIds.current = serverIds;
           }
         } catch (err: unknown) {
-          if ((err as any)?.name !== "AbortError") {
+          const name = typeof err === "object" && err !== null && "name" in err ? (err as any).name : undefined;
+          if (name !== "AbortError") {
             console.error("Erro na busca remota:", err);
             setSearchError("Não foi possível sincronizar os dados.");
           }
@@ -218,13 +201,12 @@ export default function LiveSearchContainer({
     };
   }, [searchTerm, selectedCategory, masterOrder]);
 
-  // Cálculos finais de paginação
   const totalItems = services.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedServices = services.slice(startIndex, startIndex + itemsPerPage);
+  const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+  const paginatedServices = services.slice(startIndex, endIndex);
 
-  // Ajustar página atual se necessário
   React.useEffect(() => {
     if (totalPages > 0 && currentPage > totalPages) {
       setCurrentPage(totalPages);
@@ -252,63 +234,59 @@ export default function LiveSearchContainer({
           categories={categories}
           activeCategory={selectedCategory}
           onSelect={(cat) => {
-            handlePageChange(1);
             setSelectedCategory(cat);
+            handlePageChange(1);
           }}
         />
       </div>
 
-      {/* ANIMAÇÃO REESTRUTURADA:
-          Usando mode="popLayout" no grid para permitir transições fluidas entre cards
-      */}
       <div 
         ref={containerRef}
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 mt-3 mb-6 min-h-[400px]"
+        className="mt-3 mb-6"
         style={{ overflowAnchor: 'none' }} 
       >
-        <AnimatePresence mode="popLayout" initial={false}>
-          {isInitialPageLoad ? (
-            Array.from({ length: itemsPerPage }).map((_, i) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 min-h-[400px]">
+          <AnimatePresence mode="popLayout" initial={false}>
+            {isInitialPageLoad ? (
+              Array.from({ length: itemsPerPage }).map((_, i) => (
+                <motion.div
+                  key={`skeleton-${i}`}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <ServiceSkeleton />
+                </motion.div>
+              ))
+            ) : services.length === 0 && !isSearching ? (
               <motion.div
-                key={`skeleton-${i}`}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
+                key="empty-state"
+                initial={{ opacity: 0, translateY: 20 }}
+                animate={{ opacity: 1, translateY: 0 }}
+                exit={{ opacity: 0, translateY: -20 }}
+                className="col-span-full text-center py-12 bg-card rounded-xl border border-dashed border-border"
               >
-                <ServiceSkeleton />
+                <div className="text-3xl mb-3 grayscale opacity-30">🔍</div>
+                <p className="text-muted-foreground font-black text-[10px] uppercase tracking-[0.3em]">
+                  {searchError || "Nenhum resultado encontrado para sua busca"}
+                </p>
               </motion.div>
-            ))
-          ) : services.length === 0 && !isSearching ? (
-            <motion.div
-              key="empty-state"
-              initial={{ opacity: 0, translateY: 20 }}
-              animate={{ opacity: 1, translateY: 0 }}
-              exit={{ opacity: 0, translateY: -20 }}
-              className="col-span-full text-center py-12 bg-card rounded-xl border border-dashed border-border"
-            >
-              <div className="text-3xl mb-3 grayscale opacity-30">🔍</div>
-              <p className="text-muted-foreground font-black text-[10px] uppercase tracking-[0.3em]">
-                {searchError || "Nenhum resultado encontrado para sua busca"}
-              </p>
-            </motion.div>
-          ) : (
-            paginatedServices.map((service) => (
-              <motion.div
-                key={service.id}
-                layout="position" // Essencial para o deslizamento suave entre posições
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ 
-                  duration: 0.25,
-                  layout: { duration: 0.3, ease: "easeOut" } 
-                }}
-              >
-                <ServiceCard service={service} />
-              </motion.div>
-            ))
-          )}
-        </AnimatePresence>
+            ) : (
+              paginatedServices.map((service) => (
+                <motion.div
+                  key={service.id}
+                  layout="position"
+                  initial={{ opacity: 1 }} 
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <ServiceCard service={service} />
+                </motion.div>
+              ))
+            )}
+          </AnimatePresence>
+        </div>
       </div>
 
       {totalPages > 1 && (
