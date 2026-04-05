@@ -87,7 +87,7 @@ export default function EditServiceForm({ service }: { service: Service }) {
       setUploading(true);
       setError("");
       const fileExt = file.name.split(".").pop();
-      const fileName = `${service.id}-${Date.now()}.${fileExt}`;
+      const fileName = `logos/${service.id}-${Date.now()}.${fileExt}`;
       const { error: uploadError } = await supabase.storage
         .from("logos")
         .upload(fileName, file);
@@ -449,4 +449,8 @@ export default function EditServiceForm({ service }: { service: Service }) {
       </div>
     </form>
   );
+}
+
+function getPublicUrlForLogos(fileName: string): string {
+  throw new Error("Function not implemented.");
 }

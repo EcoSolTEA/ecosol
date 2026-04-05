@@ -3,7 +3,7 @@ import prisma from "@/lib/prisma";
 
 export async function POST(request: Request) {
   try {
-    const { ids, type } = await request.json(); // Agora recebe 'ids' (array)
+    const { ids, type } = await request.json();
 
     if (!Array.isArray(ids)) {
       return NextResponse.json({ error: "IDs devem ser um array" }, { status: 400 });

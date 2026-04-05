@@ -32,11 +32,15 @@ export default async function AdminLayout({
   if (!user) redirect("/login");
 
   // Verificação de Role via Banco (Redundância de segurança)
-  const siteBase = (process.env.NEXT_PUBLIC_SITE_URL || "").replace(/\/$/, "");
-  const roleUrl = siteBase
-    ? `${siteBase}/api/user/role?email=${user.email}`
-    : `/api/user/role?email=${user.email}`;
-  const roleRes = await fetch(roleUrl);
+  // API agora usa autenticação via JWT, não precisa de email
+  const roleRes = await fetch(
+    (process.env.NEXT_PUBLIC_SITE_URL || "").replace(/\/$/, "") + "/api/user/role"
+  );
+  
+  if (!roleRes.ok) {
+    redirect("/login");
+  }
+  
   const { role } = await roleRes.json();
 
   if (role !== "ADMIN") {

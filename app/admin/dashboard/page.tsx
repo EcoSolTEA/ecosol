@@ -15,13 +15,8 @@ export default function AdminDashboard() {
 
   async function load() {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user?.email) {
-        const roleRes = await fetch(`/api/user/role?email=${session.user.email}`);
-        const { role } = await roleRes.json();
-        setIsAdmin(role === 'ADMIN');
-      }
-
+      // Não precisa mais verificar role manualmente - middleware já faz isso
+      // Só carrega dados do painel admin
       const res = await fetch("/api/admin/pending", { 
         cache: 'no-store',
         headers: { 'Pragma': 'no-cache', 'Cache-Control': 'no-cache' }
@@ -29,8 +24,10 @@ export default function AdminDashboard() {
       if (!res.ok) throw new Error("Erro ao carregar");
       const data = await res.json();
       setPending(data);
+      setIsAdmin(true); // Se chegou aqui, é admin (middleware validou)
     } catch (err) {
       console.error("Erro na carga do painel:", err);
+      setIsAdmin(false);
     } finally {
       setLoading(false);
     }

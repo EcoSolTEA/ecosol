@@ -272,7 +272,7 @@ export default function LiveSearchContainer({
                 </p>
               </motion.div>
             ) : (
-              paginatedServices.map((service) => (
+              paginatedServices.map((service, index) => (
                 <motion.div
                   key={service.id}
                   layout="position"
@@ -281,7 +281,7 @@ export default function LiveSearchContainer({
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.2 }}
                 >
-                  <ServiceCard service={service} />
+                  <ServiceCard service={service} eager={index < 4} />
                 </motion.div>
               ))
             )}

@@ -14,7 +14,7 @@ export async function GET() {
         id: true,
         name: true,
         category: true,
-        image: true,
+        image: false,
         description: true,
         whatsapp: true,
         instagram: true,

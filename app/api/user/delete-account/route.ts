@@ -30,7 +30,15 @@ export async function DELETE(request: Request) {
       }
     );
 
-    // Verificar sessão do usuário
+    // Exclusão de imagens
+const { data: images } = await supabase.storage.from('logos').list();
+if (images) {
+ for (const image of images) {
+  await supabase.storage.from('logos').remove([image.name]);
+ }
+}
+
+
     const { data: { session } } = await supabase.auth.getSession();
     
     if (!session) {

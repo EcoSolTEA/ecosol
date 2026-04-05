@@ -33,7 +33,8 @@ export default function EditProfile() {
       if (user?.email) {
         setUserEmail(user.email);
         try {
-          const res = await fetch(`/api/user/profile?email=${user.email}`);
+          // Não passa email como param - API usa auth token
+          const res = await fetch("/api/user/profile");
           if (res.ok) {
             const data = await res.json();
             setForm({

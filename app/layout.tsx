@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import Footer from "@/components/footer";
+import GoogleAnalytics from "@/components/google-analytics";
 import "./globals.css";
 import "./globals-sw.css";
 import RegisterSW from "@/components/register-sw";
@@ -175,6 +176,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground transition-colors duration-300`}
       >
+        <GoogleAnalytics />
         <ThemeProvider
           attribute="class"
           defaultTheme="light"

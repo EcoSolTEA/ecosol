@@ -32,9 +32,6 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname
 
-  // --- LOG DE DEBUG NO TERMINAL (Remover após testar) ---
-  console.log(`🛣️ Middleware: ${pathname} | 👤 Usuário: ${user ? 'Logado' : 'Deslogado'}`)
-
   // 4. Definição de Rotas Protegidas
   // Usamos regex simples para garantir que sub-rotas como /admin/qualquer-coisa caiam aqui
   const isProtectedPage = 
@@ -46,14 +43,10 @@ export async function middleware(request: NextRequest) {
 
   // 5. Lógica de Bloqueio
   if (!user && isProtectedPage) {
-    console.log(" Acesso negado. Redirecionando para /login...")
     const url = new URL('/login', request.url)
     url.searchParams.set('next', pathname)
     
-    // Criamos a resposta de redirecionamento
     const response = NextResponse.redirect(url)
-    
-    // IMPORTANTE: Copiamos os cookies de autenticação (mesmo vazios) para a nova resposta
     supabaseResponse.cookies.getAll().forEach((cookie) => {
       response.cookies.set(cookie.name, cookie.value)
     })

@@ -421,3 +421,7 @@ export default function SubmitPage() {
     </div>
   );
 }
+
+function getPublicUrlForLogos(filePath: string): string {
+  throw new Error("Function not implemented.");
+}

@@ -37,12 +37,12 @@ export default function LoginPage() {
       return;
     }
 
-    // 2. Verificação de Role via API (Engenharia de Redirecionamento)
+    // 2. Verificação de Role via API (não precisa passar email, API usa auth token)
     try {
-      const res = await fetch(`/api/user/role?email=${email}`);
-      if (!res.ok) throw new Error("Falha ao validar permissões");
+      const roleRes = await fetch("/api/user/role");
+      if (!roleRes.ok) throw new Error("Falha ao validar permissões");
       
-      const { role } = await res.json();
+      const { role } = await roleRes.json();
       router.refresh(); // Sincroniza cookies/sessão com o Middleware
 
       if (role === "ADMIN") {
