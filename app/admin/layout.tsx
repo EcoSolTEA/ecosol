@@ -32,19 +32,30 @@ export default async function AdminLayout({
   if (!user) redirect("/login");
 
   // Verificação de Role via Banco (Redundância de segurança)
-  // API agora usa autenticação via JWT, não precisa de email
-  const roleRes = await fetch(
-    (process.env.NEXT_PUBLIC_SITE_URL || "").replace(/\/$/, "") + "/api/user/role"
-  );
-  
-  if (!roleRes.ok) {
-    redirect("/login");
-  }
-  
-  const { role } = await roleRes.json();
+  // API agora usa autenticação via JWT do Supabase
+  try {
+    const roleRes = await fetch(
+      (process.env.NEXT_PUBLIC_SITE_URL || "").replace(/\/$/, "") + "/api/user/role",
+      {
+        headers: {
+          // Pass auth cookies to API
+          cookie: cookieStore.getAll().map(c => `${c.name}=${c.value}`).join('; ')
+        }
+      }
+    );
+    
+    if (!roleRes.ok) {
+      redirect("/login");
+    }
+    
+    const { role } = await roleRes.json();
 
-  if (role !== "ADMIN") {
-    redirect("/profile");
+    if (role !== "ADMIN") {
+      redirect("/profile");
+    }
+  } catch (err) {
+    console.error("Admin layout error:", err);
+    redirect("/login");
   }
 
   return <>{children}</>;
