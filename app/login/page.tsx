@@ -29,7 +29,7 @@ export default function LoginPage() {
     setMessage(null);
 
     // 1. Autenticação Primária via Supabase
-    const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password });
 
     if (authError) {
       setMessage({ type: 'error', text: "E-mail ou senha incorretos." });
@@ -37,13 +37,25 @@ export default function LoginPage() {
       return;
     }
 
-    // 2. Verificação de Role via API (não precisa passar email, API usa auth token)
+    // 2. Sincronizar com middleware ANTES de qualquer fetch
+    await new Promise(resolve => setTimeout(resolve, 100));
+    router.refresh();
+    
+    // 3. Aguardar refresh completar
+    await new Promise(resolve => setTimeout(resolve, 400));
+
+    // 4. Verificação de Role via API
     try {
       const roleRes = await fetch("/api/user/role");
-      if (!roleRes.ok) throw new Error("Falha ao validar permissões");
+      
+      if (!roleRes.ok) {
+        // Se falhar, fallback: usuário novo pode ser USER
+        console.warn("Role check failed, defaulting to /profile");
+        router.push("/profile");
+        return;
+      }
       
       const { role } = await roleRes.json();
-      router.refresh(); // Sincroniza cookies/sessão com o Middleware
 
       if (role === "ADMIN") {
         router.push("/admin/dashboard");
@@ -52,7 +64,7 @@ export default function LoginPage() {
       }
     } catch (err) {
       console.error("Erro na busca de role:", err);
-      router.push("/");
+      router.push("/profile");
     } finally {
       setLoading(false);
     }
